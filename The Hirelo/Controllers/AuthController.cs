@@ -39,6 +39,13 @@ public class AuthController : ControllerBase
     {
         try
         {
+            // Check if email already exists in Cognito BEFORE creating a new username
+            var existingUsername = await FindUsernameByEmail(request.Email);
+            if (existingUsername != null)
+            {
+                return Conflict(new { message = "A user with this email already exists. Please confirm your email or reset your password." });
+            }
+
             // Use a generated username (Cognito pool is configured to use email as an alias,
             // so supplying an email as the Username can cause an InvalidParameterException).
             var username = Guid.NewGuid().ToString();
@@ -514,7 +521,7 @@ public class AuthController : ControllerBase
 // DTOs for testing purposes
 
 //public class RegisterRequest
-//{
+//}
 //    public string Email { get; set; } = null!;
 //    public string Password { get; set; } = null!;
 //    public string FullName { get; set; } = null!;
