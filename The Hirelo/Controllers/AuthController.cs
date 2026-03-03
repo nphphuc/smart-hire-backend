@@ -7,6 +7,11 @@ using Amazon.CognitoIdentityProvider.Model;
 using The_Hirelo.Data;
 using The_Hirelo.Models;
 using System.Linq;
+using System.Text;
+using System.Security.Cryptography;
+using The_Hirelo.DTOs.Requests;
+using The_Hirelo.DTOs.Responses;
+using ChangePasswordRequest = The_Hirelo.DTOs.Requests.ChangePasswordRequest;
 
 namespace The_Hirelo.Controllers;
 
@@ -18,6 +23,7 @@ public class AuthController : ControllerBase
     private readonly IAmazonCognitoIdentityProvider _cognitoClient;
     private readonly string _clientId;
     private readonly string _userPoolId;
+    private readonly string? _clientSecret;
 
     public AuthController(
         HireloDbContext context,
@@ -28,6 +34,17 @@ public class AuthController : ControllerBase
         _cognitoClient = cognitoClient;
         _clientId = configuration["AWS:Cognito:ClientId"]!;
         _userPoolId = configuration["AWS:Cognito:UserPoolId"]!;
+        _clientSecret = configuration["AWS:Cognito:ClientSecret"];
+    }
+
+    private string ComputeSecretHash(string username)
+    {
+        if (string.IsNullOrEmpty(_clientSecret)) return string.Empty;
+        var data = Encoding.UTF8.GetBytes(username + _clientId);
+        var key = Encoding.UTF8.GetBytes(_clientSecret);
+        using var hmac = new HMACSHA256(key);
+        var hash = hmac.ComputeHash(data);
+        return Convert.ToBase64String(hash);
     }
 
     // POST /api/auth/register
@@ -36,28 +53,72 @@ public class AuthController : ControllerBase
     {
         try
         {
-            // Use a generated username (Cognito pool is configured to use email as an alias,
-            // so supplying an email as the Username can cause an InvalidParameterException).
+            // Check if email already exists in database
+            var existingUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
+
+            if (existingUser != null)
+            {
+                return Conflict(new { message = "A user with this email already exists." });
+            }
+
+            // Use a generated username by default. If pool requires email as username we'll retry.
             var username = Guid.NewGuid().ToString();
 
-            var signUpRequest = new SignUpRequest
+            SignUpRequest CreateSignUp(string user)
             {
-                ClientId = _clientId,
-                Username = username,
-                Password = request.Password,
-                UserAttributes = new List<AttributeType>
+                var req = new SignUpRequest
                 {
-                    new AttributeType { Name = "email", Value = request.Email },
-                    new AttributeType { Name = "name", Value = request.FullName }
-                }
-            };
+                    ClientId = _clientId,
+                    Username = user,
+                    Password = request.Password,
+                    UserAttributes = new List<AttributeType>
+                    {
+                        new AttributeType { Name = "email", Value = request.Email },
+                        new AttributeType { Name = "name", Value = request.FullName }
+                    }
+                };
 
-            var response = await _cognitoClient.SignUpAsync(signUpRequest);
+                if (!string.IsNullOrWhiteSpace(_clientSecret))
+                {
+                    req.SecretHash = ComputeSecretHash(user);
+                }
+
+                return req;
+            }
+
+            var signUpRequest = CreateSignUp(username);
+
+            SignUpResponse response;
+            try
+            {
+                response = await _cognitoClient.SignUpAsync(signUpRequest);
+            }
+            catch (InvalidParameterException ex)
+            {
+                // If Cognito requires username to be an email, retry with the email as username
+                var msg = ex.Message ?? string.Empty;
+                if (msg.Contains("Username should be an email", StringComparison.OrdinalIgnoreCase)
+                    || msg.Contains("Username must be an email", StringComparison.OrdinalIgnoreCase)
+                    || msg.Contains("Username cannot be of email format", StringComparison.OrdinalIgnoreCase)
+                    || msg.Contains("email", StringComparison.OrdinalIgnoreCase))
+                {
+                    var emailUsernameRequest = CreateSignUp(request.Email);
+                    response = await _cognitoClient.SignUpAsync(emailUsernameRequest);
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            // Save user to database after successful signup
+            await SyncUserToDatabase(response.UserSub, request.Email);
 
             return Ok(new
             {
                 message = "Registration successful. Please check your email for a confirmation code.",
-                username = username,
+                username = response.UserConfirmed == true ? request.Email : null,
                 userSub = response.UserSub,
                 confirmed = response.UserConfirmed
             });
@@ -131,7 +192,7 @@ public class AuthController : ControllerBase
                 Username = username
             };
 
-            await _cognitoClient.ResendConfirmationCodeAsync(resendRequest); 
+            await _cognitoClient.ResendConfirmationCodeAsync(resendRequest);
 
             return Ok(new { message = "Confirmation code resent. Please check your email." });
         }
@@ -157,6 +218,12 @@ public class AuthController : ControllerBase
                     { "PASSWORD", request.Password }
                 }
             };
+
+            // Add SECRET_HASH if client secret exists
+            if (!string.IsNullOrWhiteSpace(_clientSecret))
+            {
+                authRequest.AuthParameters["SECRET_HASH"] = ComputeSecretHash(request.Email);
+            }
 
             var response = await _cognitoClient.InitiateAuthAsync(authRequest);
 
@@ -198,6 +265,10 @@ public class AuthController : ControllerBase
         catch (UserNotFoundException)
         {
             return NotFound(new { message = "User not found." });
+        }
+        catch (InvalidParameterException ex)
+        {
+            return BadRequest(new { message = $"Invalid parameter: {ex.Message}" });
         }
         catch (Exception ex)
         {
@@ -444,6 +515,7 @@ public class AuthController : ControllerBase
     {
         try
         {
+            // Try using ListUsers with email filter
             var listRequest = new ListUsersRequest
             {
                 UserPoolId = _userPoolId,
@@ -453,10 +525,30 @@ public class AuthController : ControllerBase
 
             var response = await _cognitoClient.ListUsersAsync(listRequest);
             var user = response.Users?.FirstOrDefault();
-            return user?.Username;
+
+            if (user != null)
+                return user.Username;
+
+            // If not found by ListUsers, try using email as username directly (email might be the username)
+            try
+            {
+                var adminGetRequest = new AdminGetUserRequest
+                {
+                    UserPoolId = _userPoolId,
+                    Username = email
+                };
+                var adminResponse = await _cognitoClient.AdminGetUserAsync(adminGetRequest);
+                return adminResponse.Username;
+            }
+            catch
+            {
+                // Email is not the username, return null
+                return null;
+            }
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"FindUsernameByEmail error for {email}: {ex.Message}");
             return null;
         }
     }
@@ -474,10 +566,29 @@ public class AuthController : ControllerBase
 
             var response = await _cognitoClient.ListUsersAsync(listRequest);
             var user = response.Users?.FirstOrDefault();
-            return user?.Attributes?.FirstOrDefault(a => a.Name == "sub")?.Value;
+
+            if (user != null)
+                return user?.Attributes?.FirstOrDefault(a => a.Name == "sub")?.Value;
+
+            // Fallback: try email as username
+            try
+            {
+                var adminGetRequest = new AdminGetUserRequest
+                {
+                    UserPoolId = _userPoolId,
+                    Username = email
+                };
+                var adminResponse = await _cognitoClient.AdminGetUserAsync(adminGetRequest);
+                return adminResponse.UserAttributes?.FirstOrDefault(a => a.Name == "sub")?.Value;
+            }
+            catch
+            {
+                return null;
+            }
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"GetCognitoSub error for {email}: {ex.Message}");
             return null;
         }
     }
@@ -508,73 +619,73 @@ public class AuthController : ControllerBase
     }
 }
 
-// DTOs
+// DTOs for testing purposes
 
-public class RegisterRequest
-{
-    public string Email { get; set; } = null!;
-    public string Password { get; set; } = null!;
-    public string FullName { get; set; } = null!;
-}
+//public class RegisterRequest
+//{
+//    public string Email { get; set; } = null!;
+//    public string Password { get; set; } = null!;
+//    public string FullName { get; set; } = null!;
+//}
 
-public class ConfirmEmailRequest
-{
-    public string Email { get; set; } = null!;
-    public string ConfirmationCode { get; set; } = null!;
-}
+//public class ConfirmEmailRequest
+//{
+//    public string Email { get; set; } = null!;
+//    public string ConfirmationCode { get; set; } = null!;
+//}
 
-public class ResendConfirmationRequest
-{
-    public string Email { get; set; } = null!;
-}
+//public class ResendConfirmationRequest
+//{
+//    public string Email { get; set; } = null!;
+//}
 
-public class LoginRequest
-{
-    public string Email { get; set; } = null!;
-    public string Password { get; set; } = null!;
-}
+//public class LoginRequest
+//{
+//    public string Email { get; set; } = null!;
+//    public string Password { get; set; } = null!;
+//}
 
-public class LoginResponse
-{
-    public string AccessToken { get; set; } = null!;
-    public string IdToken { get; set; } = null!;
-    public string RefreshToken { get; set; } = null!;
-    public int ExpiresIn { get; set; }
-    public string TokenType { get; set; } = null!;
-}
+//public class LoginResponse
+//{
+//    public string AccessToken { get; set; } = null!;
+//    public string IdToken { get; set; } = null!
+//    public string RefreshToken { get; set; } = null!;
+//    public int ExpiresIn { get; set; }
+//    public string TokenType { get; set; } = null!;
+//}
 
-public class RefreshTokenRequest
-{
-    public string RefreshToken { get; set; } = null!;
-}
+//public class RefreshTokenRequest
+//{
+//    public string RefreshToken { get; set; } = null!;
+//}
 
-public class ForgotPasswordRequestDto
-{
-    public string Email { get; set; } = null!;
-}
+//public class ForgotPasswordRequestDto
+//{
+//    public string Email { get; set; } = null!;
+//}
 
-public class ResetPasswordRequest
-{
-    public string Email { get; set; } = null!;
-    public string ConfirmationCode { get; set; } = null!;
-    public string NewPassword { get; set; } = null!;
-}
+//public class ResetPasswordRequest
+//{
+//    public string Email { get; set; } = null!;
+//    public string ConfirmationCode { get; set; } = null!;
+//    public string NewPassword { get; set; } = null!;
+//}
 
-public class ChangePasswordRequest
-{
-    public string CurrentPassword { get; set; } = null!;
-    public string NewPassword { get; set; } = null!;
-}
+//public class ChangePasswordRequest
+//{
+//    public string CurrentPassword { get; set; } = null!;
+//    public string NewPassword { get; set; } = null!;
+//}
 
-public class UserInfoResponse
-{
-    public Guid Id { get; set; }
-    public string Email { get; set; } = null!;
-    public string Role { get; set; } = null!;
-    public DateTime CreatedAt { get; set; }
-}
+//public class UserInfoResponse
+//{
+//    public Guid Id { get; set; }
+//    public string Email { get; set; } = null!;
+//    public string Role { get; set; } = null!;
+//    public DateTime CreatedAt { get; set; }
+//}
 
-public class UpdateRoleRequest
-{
-    public string Role { get; set; } = null!;
-}
+//public class UpdateRoleRequest
+//{
+//    public string Role { get; set; } = null!;
+//}
