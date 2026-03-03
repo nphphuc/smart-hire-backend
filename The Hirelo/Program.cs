@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Amazon;
 using Amazon.CognitoIdentityProvider;
+using The_Hirelo.Data;
 
 namespace The_Hirelo
 {
@@ -44,19 +45,25 @@ namespace The_Hirelo
                 });
             });
 
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            builder.Services.AddDbContext<Data.HireloDbContext>(options =>
-                options.UseNpgsql(connectionString));
+            var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
-            // Configure AWS Cognito
-            var cognitoRegion = builder.Configuration["AWS:Cognito:Region"]!;
-            var cognitoUserPoolId = builder.Configuration["AWS:Cognito:UserPoolId"]!;
-            var cognitoAuthority = $"https://cognito-idp.{cognitoRegion}.amazonaws.com/{cognitoUserPoolId}";
+            builder.Services.AddDbContext<HireloDbContext>(options =>
+                options.UseNpgsql(connectionString)
+            );
+
+            var awsRegion = Environment.GetEnvironmentVariable("AWS_REGION")
+                ?? builder.Configuration["AWS:Cognito:Region"];
+            var userPoolId = Environment.GetEnvironmentVariable("AWS_USER_POOL_ID")
+                ?? builder.Configuration["AWS:Cognito:UserPoolId"];
+            var clientId = Environment.GetEnvironmentVariable("AWS_CLIENT_ID")
+                ?? builder.Configuration["AWS:Cognito:ClientId"];
+            var cognitoAuthority = $"https://cognito-idp.{awsRegion}.amazonaws.com/{userPoolId}";
 
             // Register AWS Cognito Identity Provider Client
             builder.Services.AddSingleton<IAmazonCognitoIdentityProvider>(sp =>
             {
-                return new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName(cognitoRegion));
+                return new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName(awsRegion));
             });
 
             builder.Services.AddAuthentication(options =>
