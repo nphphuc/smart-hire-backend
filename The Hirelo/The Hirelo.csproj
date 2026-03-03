@@ -22,8 +22,8 @@
 
   <ItemGroup>
     <Folder Include="Common\" />
+    <Folder Include="Repositories\Implementation\" />
     <Folder Include="Services\" />
-    <Folder Include="Repositories\" />
     <Folder Include="NewFolder\" />
   </ItemGroup>
 
