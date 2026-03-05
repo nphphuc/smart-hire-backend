@@ -12,6 +12,7 @@ using System.Security.Cryptography;
 using The_Hirelo.DTOs.Requests;
 using The_Hirelo.DTOs.Responses;
 using ChangePasswordRequest = The_Hirelo.DTOs.Requests.ChangePasswordRequest;
+using The_Hirelo.Enums;
 
 namespace The_Hirelo.Controllers;
 
@@ -315,7 +316,7 @@ public class AuthController : ControllerBase
 
     // POST /api/auth/forgot-password
     [HttpPost("forgot-password")]
-    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
+    public async Task<IActionResult> ForgotPassword([FromBody] DTOs.Requests.ForgotPasswordRequest request)
     {
         try
         {
@@ -487,7 +488,7 @@ public class AuthController : ControllerBase
         var currentUser = await _context.Users
             .FirstOrDefaultAsync(u => u.CognitoSub == currentCognitoSub);
 
-        if (currentUser == null || currentUser.Role != "Admin")
+        if (currentUser == null || currentUser.Role != UserRole.Admin)
         {
             return Forbid();
         }
@@ -498,7 +499,7 @@ public class AuthController : ControllerBase
             return NotFound(new { message = "User not found" });
         }
 
-        var validRoles = new[] { "Admin", "Recruiter", "Candidate" };
+        var validRoles = new[] { UserRole.Admin, UserRole.Recruiter, UserRole.Candidate };
         if (!validRoles.Contains(request.Role))
         {
             return BadRequest(new { message = "Invalid role. Valid roles: Admin, Recruiter, Candidate" });
@@ -605,7 +606,7 @@ public class AuthController : ControllerBase
                 Id = Guid.NewGuid(),
                 CognitoSub = cognitoSub,
                 Email = email,
-                Role = "Candidate",
+                Role = UserRole.Candidate,
                 CreatedAt = DateTime.UtcNow
             };
             _context.Users.Add(user);

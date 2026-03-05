@@ -1,6 +1,6 @@
 ﻿namespace The_Hirelo.DTOs.Requests
 {
-    public class ForgotPasswordRequestDto
+    public class ForgotPasswordRequest
     {
         public string Email { get; set; } = null!;
     }

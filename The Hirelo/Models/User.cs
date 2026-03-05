@@ -1,6 +1,7 @@
 ﻿namespace The_Hirelo.Models;
 using System;
 using System.Collections.Generic;
+using The_Hirelo.Enums;
 
 public class User
 {
@@ -10,7 +11,7 @@ public class User
 
     public string Email { get; set; } = null!;
 
-    public string Role { get; set; } = "Candidate";
+    public UserRole Role { get; set; } = UserRole.Candidate;
 
     public DateTime CreatedAt { get; set; }
 

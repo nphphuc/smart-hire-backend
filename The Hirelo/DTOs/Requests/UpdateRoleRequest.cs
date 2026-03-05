@@ -1,7 +1,9 @@
-﻿namespace The_Hirelo.DTOs.Requests
+﻿using The_Hirelo.Enums;
+
+namespace The_Hirelo.DTOs.Requests
 {
     public class UpdateRoleRequest
     {
-        public string Role { get; set; } = null!;
+        public UserRole Role { get; set; } = UserRole.Candidate!;
     }
 }
