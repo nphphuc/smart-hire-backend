@@ -94,3 +94,4 @@ docker-compose.override.yml
 ## =========================
 *.tmp
 *.temp
+requirements.txt
