@@ -6,8 +6,9 @@ namespace The_Hirelo.Repositories.Interfaces
     public interface ICandidateRepository
     {
         Task<IEnumerable<User>> GetCandidatesByJobIdAsync(Guid jobId);
-        Task<ApplicationStatus?> GetStatusAsync(Guid jobId, Guid candidateId);
-        Task UpdateStatusAsync(Guid jobId, Guid candidateId, ApplicationStatus status);
+        Task<ApplicationStatus?> GetStatusAsync(Guid candidateId);
+        Task UpdateStatusAsync(Guid candidateId, ApplicationStatus status);
         Task<bool> ExistsAsync(Guid jobId, Guid candidateId);
+        Task<User?> GetUserByCandidateProfileIdAsync(Guid candidateProfileId);
     }
 }

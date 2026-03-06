@@ -4,6 +4,10 @@ using Microsoft.IdentityModel.Tokens;
 using Amazon;
 using Amazon.CognitoIdentityProvider;
 using The_Hirelo.Data;
+using The_Hirelo.Repositories;
+using The_Hirelo.Repositories.Interfaces;
+using The_Hirelo.Services;
+using The_Hirelo.Services.Interfaces;
 
 namespace The_Hirelo
 {
@@ -85,6 +89,18 @@ namespace The_Hirelo
             });
 
             builder.Services.AddAuthorization();
+
+            // Register repositories and services
+            builder.Services.AddScoped<IJobRepository, JobRepository>();
+            builder.Services.AddScoped<IJobService, JobService>();
+            builder.Services.AddScoped<ICandidateRepository, CandidateRepository>();
+            builder.Services.AddScoped<ICandidateService, CandidateService>();
+            builder.Services.AddScoped<IComparisonService, ComparisonService>();
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+            builder.Services.AddScoped<ICompanyService, CompanyService>();
+            builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
+            builder.Services.AddScoped<IReportRepository, ReportRepository>();
 
             var app = builder.Build();
 
