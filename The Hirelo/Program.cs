@@ -8,6 +8,7 @@ using The_Hirelo.Repositories;
 using The_Hirelo.Repositories.Interfaces;
 using The_Hirelo.Services;
 using The_Hirelo.Services.Interfaces;
+using DotNetEnv;
 
 namespace The_Hirelo
 {
@@ -15,8 +16,9 @@ namespace The_Hirelo
     {
         public static void Main(string[] args)
         {
+            Env.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
             var builder = WebApplication.CreateBuilder(args);
-
+            
             // Add services to the container.
 
             builder.Services.AddControllers();
@@ -48,9 +50,13 @@ namespace The_Hirelo
                     }
                 });
             });
-
+            
             var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+            Console.WriteLine("=== CONNECTION STRING DEBUG ===");            
+            Console.WriteLine(Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "ENV NULL");
+            Console.WriteLine("================================");
 
             builder.Services.AddDbContext<HireloDbContext>(options =>
                 options.UseNpgsql(connectionString)
