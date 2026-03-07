@@ -29,6 +29,9 @@ namespace The_Hirelo.Data
         {
             base.OnModelCreating(modelBuilder);
             // Configure relationships and constraints here if needed
+            modelBuilder.Entity<User>()
+                .Property(u => u.Role)
+                .HasConversion<string>();
         }
     }
 }

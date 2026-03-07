@@ -2,7 +2,7 @@
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER $APP_UID
+# USER $APP_UID tam thoi bo phan nay
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
@@ -12,11 +12,13 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["The Hirelo/The Hirelo.csproj", "The Hirelo/"]
-RUN dotnet restore "./The Hirelo/The Hirelo.csproj"
+# COPY ["The Hirelo/The Hirelo.csproj", "The Hirelo/"]
+# RUN dotnet restore "./The Hirelo/The Hirelo.csproj"
+COPY ["The Hirelo.csproj", "."]
+RUN dotnet restore "The Hirelo.csproj"
 COPY . .
-WORKDIR "/src/The Hirelo"
-RUN dotnet build "./The Hirelo.csproj" -c $BUILD_CONFIGURATION -o /app/build
+# WORKDIR "/src/The Hirelo"
+# RUN dotnet build "./The Hirelo.csproj" -c $BUILD_CONFIGURATION -o /app/build tam thoi bo phan nay
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish

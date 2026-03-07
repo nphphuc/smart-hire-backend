@@ -18,7 +18,7 @@ namespace The_Hirelo
         {
             Env.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
             var builder = WebApplication.CreateBuilder(args);
-            
+
             // Add services to the container.
 
             builder.Services.AddControllers();
@@ -50,11 +50,11 @@ namespace The_Hirelo
                     }
                 });
             });
-            
-            var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
-    ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
-            Console.WriteLine("=== CONNECTION STRING DEBUG ===");            
+            var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+                ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+            Console.WriteLine("=== CONNECTION STRING DEBUG ===");
             Console.WriteLine(Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "ENV NULL");
             Console.WriteLine("================================");
 
