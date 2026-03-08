@@ -94,5 +94,5 @@ docker-compose.override.yml
 ## =========================
 *.tmp
 *.temp
-requirements.txt
-api_endpoint_recruiter.txt
+*.md
+*.txt

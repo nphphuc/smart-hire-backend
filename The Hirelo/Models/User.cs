@@ -7,7 +7,7 @@ public class User
 {
     public Guid Id { get; set; }
 
-    public string? CognitoSub { get; set; }
+    public string CognitoSub { get; set; } = null!;
 
     public string Email { get; set; } = null!;
 
