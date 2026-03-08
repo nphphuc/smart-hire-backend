@@ -1,8 +1,9 @@
-﻿namespace The_Hirelo.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-public class User
+namespace The_Hirelo.Models;
+
+public partial class User
 {
     public Guid Id { get; set; }
 
@@ -10,12 +11,13 @@ public class User
 
     public string Email { get; set; } = null!;
 
-    public string Role { get; set; } = "Candidate";
+    public string Role { get; set; } = null!;
 
     public DateTime CreatedAt { get; set; }
 
-    // Navigation
-    public RecruiterProfile? RecruiterProfile { get; set; }
-    public CandidateProfile? CandidateProfile { get; set; }
-    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public virtual CandidateProfile? CandidateProfile { get; set; }
+
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+
+    public virtual RecruiterProfile? RecruiterProfile { get; set; }
 }

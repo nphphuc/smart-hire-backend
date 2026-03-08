@@ -1,0 +1,181 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using The_Hirelo.Common;
+using The_Hirelo.Data;
+using The_Hirelo.DTOs.Requests;
+using The_Hirelo.DTOs.Responses;
+using The_Hirelo.Repositories;
+using The_Hirelo.Services;
+
+namespace The_Hirelo.Controllers
+{
+    [ApiController]
+    [Route("api/cv")]
+    [Authorize]
+    public class CVController : ControllerBase
+    {
+        private readonly ICVService _cvService;
+        private readonly ICandidateProfileRepository _profileRepo;
+        private readonly IWebSocketManager _wsManager;
+        private readonly ILogger<CVController> _logger;
+
+        private static readonly string[] AllowedExtensions = [".pdf", ".doc", ".docx"];
+        private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10MB
+        private readonly HireloDbContext _context;
+
+        public CVController(
+            ICVService cvService,
+            ICandidateProfileRepository profileRepo,
+            IWebSocketManager wsManager,
+            ILogger<CVController> logger,
+            HireloDbContext context)
+        {
+            _cvService = cvService;
+            _profileRepo = profileRepo;
+            _wsManager = wsManager;
+            _logger = logger;
+            _context = context;
+        }
+
+        // POST /api/cv/upload
+        // Diagram: FE → POST /cv/upload → verify token → S3 → INSERT profile → PUBLISH queue → 202 + profileId
+        [HttpPost("upload")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadCV([FromForm] CVUploadRequest request)
+        {
+            var cognitoSub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(cognitoSub))
+                return Unauthorized(new { message = "Invalid token" });
+
+            // Resolve userId từ DB thông qua CognitoSub
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.CognitoSub == cognitoSub);
+            if (user == null)
+                return Unauthorized(new { message = "User not found in database." });
+
+            var userId = user.Id;
+            // Validate file
+            var ext = Path.GetExtension(request.File.FileName).ToLowerInvariant();
+            if (!AllowedExtensions.Contains(ext))
+                return BadRequest(new { message = "Chỉ chấp nhận file PDF, DOC, DOCX." });
+
+            if (request.File.Length > MaxFileSizeBytes)
+                return BadRequest(new { message = "File vượt quá giới hạn 10MB." });
+
+            try
+            {
+                // Step 1: putObject → S3 → fileUrl, fileKey
+                var (fileUrl, fileKey) = await _cvService.UploadToS3Async(request.File, userId);
+
+                // Step 2: INSERT candidate_profile (status: PROCESSING) → profileId
+                var profile = await _cvService.CreateProfileAsync(userId, request.JobId, fileUrl, fileKey);
+
+                // Step 3: PUBLISH cv_parse_queue(profileId, fileKey, jobId)
+                await _cvService.PublishCVParseQueueAsync(profile.Id, fileKey, request.JobId);
+
+                _logger.LogInformation("CV accepted | ProfileId={Id} | Job={JobId}", profile.Id, request.JobId);
+
+                // 202 Accepted + profileId (FE dùng profileId để poll hoặc nhận WS event)
+                return Accepted(new CVUploadResponse
+                {
+                    ProfileId = profile.Id,
+                    Status = profile.Status,
+                    Message = "CV đã được nhận. Đang phân tích..."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CV upload failed | User={UserId}", userId);
+                return StatusCode(500, new { message = $"Upload thất bại: {ex.Message}" });
+            }
+        }
+
+        // GET /api/candidates/{profileId}
+        // Diagram: FE fetchProfile(profileId) → SELECT * FROM candidate_profiles → full profile data
+        [HttpGet("/api/candidates/{profileId:guid}")]
+        public async Task<ActionResult<CandidateProfileResponse>> GetProfile(Guid profileId)
+        {
+            var profile = await _profileRepo.GetByIdAsync(profileId);
+
+            if (profile == null)
+                return NotFound(new { message = "Profile không tồn tại." });
+
+            return Ok(new CandidateProfileResponse
+            {
+                Id = profile.Id,
+                UserId = profile.UserId,
+                JobId = profile.JobId,
+                FileUrl = profile.FileUrl,
+                Seniority = profile.Seniority,
+                ParsedSkillsJson = profile.ParsedSkillsJson,
+                Strengths = profile.Strengths,
+                Gaps = profile.Gaps,
+                MatchingScore = profile.MatchingScore,
+                Status = profile.Status,
+                CreatedAt = profile.CreatedAt ?? DateTime.UtcNow,
+                UpdatedAt = profile.UpdatedAt
+            });
+        }
+
+        // GET /api/jobs/{jobId}/candidates
+        // Recruiter Dashboard: danh sách ứng viên theo job, sort theo score
+        [HttpGet("/api/jobs/{jobId:guid}/candidates")]
+        public async Task<ActionResult<List<CandidateProfileResponse>>> GetCandidatesForJob(Guid jobId)
+        {
+            var profiles = await _profileRepo.GetByJobIdAsync(jobId);
+
+            return Ok(profiles.Select(p => new CandidateProfileResponse
+            {
+                Id = p.Id,
+                UserId = p.UserId,
+                JobId = p.JobId,
+                Seniority = p.Seniority,
+                ParsedSkillsJson = p.ParsedSkillsJson,
+                Strengths = p.Strengths,
+                Gaps = p.Gaps,
+                MatchingScore = p.MatchingScore,
+                Status = p.Status,
+                CreatedAt = p.CreatedAt ?? DateTime.UtcNow,
+                UpdatedAt = p.UpdatedAt
+            }));
+        }
+
+        // GET /api/cv/ws — WebSocket cho Recruiter Dashboard (event_cv_ready)
+        [HttpGet("ws")]
+        public async Task WebSocketEndpoint()
+        {
+            if (!HttpContext.WebSockets.IsWebSocketRequest)
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+
+            var cognitoSub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(cognitoSub))
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return;
+            }
+
+            var socket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            _wsManager.AddSocket(cognitoSub, socket);
+            _logger.LogInformation("WebSocket connected: {UserId}", cognitoSub);
+
+            // Giữ kết nối sống cho đến khi client đóng
+            var buffer = new byte[1024];
+            var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
+            while (!result.CloseStatus.HasValue)
+                result = await socket.ReceiveAsync(buffer, CancellationToken.None);
+
+            _wsManager.RemoveSocket(cognitoSub);
+            await socket.CloseAsync(result.CloseStatus!.Value, result.CloseStatusDescription, CancellationToken.None);
+            _logger.LogInformation("WebSocket disconnected: {UserId}", cognitoSub);
+        }
+    }
+}

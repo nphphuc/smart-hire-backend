@@ -154,7 +154,7 @@ public class AuthController : ControllerBase
             var confirmRequest = new ConfirmSignUpRequest
             {
                 ClientId = _clientId,
-                Username = username,
+                Username = request.Email,
                 ConfirmationCode = request.ConfirmationCode
             };
 
@@ -448,7 +448,7 @@ public class AuthController : ControllerBase
 
     // GET /api/auth/me
     [HttpGet("me")]
-    [Authorize]
+
     public async Task<ActionResult<UserInfoResponse>> GetCurrentUser()
     {
         var cognitoSub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
