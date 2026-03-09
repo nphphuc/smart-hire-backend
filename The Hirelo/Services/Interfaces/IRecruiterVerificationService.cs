@@ -1,9 +1,16 @@
 ﻿using The_Hirelo.DTOs.Requests;
+using The_Hirelo.Models;
 
 namespace The_Hirelo.Services.Interfaces
 {
     public interface IRecruiterVerificationService
     {
-        Task<Guid> SubmitAsync(Guid recruiterProfileId, RecruiterVerificationRequest request);
+        Task<Guid> SubmitAsync(Guid userId, RecruiterVerificationRequest request);
+        Task<RecruiterVerification?> GetByIdAsync(Guid verificationId);
+        Task<List<RecruiterVerification>> GetAllAsync();
+        Task<RecruiterVerification?> GetByUserIdAsync(Guid userId);
+        Task<bool> ApproveVerificationAsync(Guid verificationId);
+        Task<bool> RejectVerificationAsync(Guid verificationId);
+        Task<bool> RemoveRecruiterRoleAsync(Guid userId);
     }
 }

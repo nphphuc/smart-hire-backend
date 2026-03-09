@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using The_Hirelo.Data;
@@ -11,9 +12,11 @@ using The_Hirelo.Data;
 namespace The_Hirelo.Migrations
 {
     [DbContext(typeof(HireloDbContext))]
-    partial class HireloDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260309034237_UpdateRecruiterVerificationModel")]
+    partial class UpdateRecruiterVerificationModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -103,9 +106,6 @@ namespace The_Hirelo.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
-                        .HasColumnType("text");
-
-                    b.Property<string>("TaxCode")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -309,17 +309,12 @@ namespace The_Hirelo.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("VerificationId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
-
-                    b.HasIndex("VerificationId");
 
                     b.ToTable("RecruiterProfiles");
                 });
@@ -351,7 +346,7 @@ namespace The_Hirelo.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UserId")
@@ -557,15 +552,9 @@ namespace The_Hirelo.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("The_Hirelo.Models.RecruiterVerification", "Verification")
-                        .WithMany()
-                        .HasForeignKey("VerificationId");
-
                     b.Navigation("Company");
 
                     b.Navigation("User");
-
-                    b.Navigation("Verification");
                 });
 
             modelBuilder.Entity("The_Hirelo.Models.RecruiterVerification", b =>

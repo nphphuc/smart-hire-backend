@@ -45,9 +45,10 @@ namespace The_Hirelo.Data
                 .HasConversion<string>();
 
             modelBuilder.Entity<RecruiterVerification>()
-                .HasOne(v => v.RecruiterProfile)
-                .WithOne(r => r.Verification)
-                .HasForeignKey<RecruiterVerification>(v => v.RecruiterProfileId);
+                .HasOne(v => v.User)
+                .WithMany()
+                .HasForeignKey(v => v.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<RecruiterVerification>()
                 .Property(v => v.ImagesJson)

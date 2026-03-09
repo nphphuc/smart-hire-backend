@@ -11,6 +11,7 @@ namespace The_Hirelo.Repositories.Interfaces
         Task<User> CreateAsync(User user);
         Task<IEnumerable<User>> GetByRoleAsync(UserRole role);
         Task<User> UpdateAsync(Guid id, User user); 
+        Task UpdateAsync(User user);
         Task DeleteAsync(Guid id);
     }
 }

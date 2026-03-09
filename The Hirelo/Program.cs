@@ -20,6 +20,20 @@ namespace The_Hirelo
         {
             Env.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
             var builder = WebApplication.CreateBuilder(args);
+            
+            // Load AWS credentials from environment variables
+            var awsAccessKey = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID")
+                ?? Environment.GetEnvironmentVariable("AWS__AccessKey");
+            var awsSecretKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY")
+                ?? Environment.GetEnvironmentVariable("AWS__SecretKey");
+
+            if (!string.IsNullOrEmpty(awsAccessKey) && !string.IsNullOrEmpty(awsSecretKey))
+            {
+                // Set AWS credentials from environment
+                Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", awsAccessKey);
+                Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", awsSecretKey);
+            }
+
             builder.Services.AddAWSService<IAmazonS3>();
 
             // Add services to the container.
@@ -77,12 +91,15 @@ namespace The_Hirelo
             var clientSecret = Environment.GetEnvironmentVariable("AWS__Cognito__ClientSecret")
                 ?? builder.Configuration["AWS:Cognito:ClientSecret"];
             var cognitoAuthority = $"https://cognito-idp.{awsRegion}.amazonaws.com/{userPoolId}";
-            var bucketName = builder.Configuration["AWS:BucketName"];
+            var s3BucketName = builder.Configuration["AWS:S3:BucketName"] ?? "hirelo-media";
+            
             Console.WriteLine($"AWS_REGION = {awsRegion}");
             Console.WriteLine($"USER_POOL_ID = {userPoolId}");
             Console.WriteLine($"CLIENT_ID = {clientId}");
-            Console.WriteLine($"CLIENT_SECRET = {(string.IsNullOrEmpty(clientSecret) ? "NOT SET" : "SET")}");
+            Console.WriteLine($"CLIENT_SECRET = {(string.IsNullOrEmpty(clientSecret) ? "NOT SET" : "SET")}\n");
             Console.WriteLine($"COGNITO_AUTHORITY = {cognitoAuthority}");
+            Console.WriteLine($"S3_BUCKET_NAME = {s3BucketName}");
+            Console.WriteLine($"AWS_ACCESS_KEY_ID = {(string.IsNullOrEmpty(awsAccessKey) ? "NOT SET" : "SET")}");
 
             // Register AWS Cognito Identity Provider Client
             builder.Services.AddSingleton<IAmazonCognitoIdentityProvider>(sp =>
@@ -104,8 +121,13 @@ namespace The_Hirelo
                     ValidIssuer = cognitoAuthority,
                     ValidateAudience = false,
                     ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true
+                    ValidateIssuerSigningKey = true,
+                    // Map Cognito group claim to role so [Authorize(Roles = "Admin")] works
+                    RoleClaimType = "cognito:groups"
                 };
+
+                // Ensure inbound claim mapping doesn't drop custom claims
+                options.MapInboundClaims = true;
             });
 
             builder.Services.AddAuthorization();
@@ -135,6 +157,16 @@ namespace The_Hirelo
             builder.Services.AddScoped<IFileStorage, S3FileStorage>();
 
             var app = builder.Build();
+
+            // Call centralized seed class to seed admin
+            try
+            {
+                SeedData.SeedAdminAsync(app.Services).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Admin seeding encountered an error: {ex.Message}");
+            }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

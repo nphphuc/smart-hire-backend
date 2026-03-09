@@ -61,5 +61,11 @@ namespace The_Hirelo.Repositories
             await _context.SaveChangesAsync();
             return existing;
         }
+
+        public async Task UpdateAsync(User user)
+        {
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+        }
     }
 }

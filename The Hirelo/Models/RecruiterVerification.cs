@@ -6,7 +6,7 @@ namespace The_Hirelo.Models
     {
         public Guid Id { get; set; }
 
-        public Guid RecruiterProfileId { get; set; }
+        public Guid UserId { get; set; }
 
         public string CompanyName { get; set; } = null!;
 
@@ -20,7 +20,9 @@ namespace The_Hirelo.Models
 
         public DateTime CreatedAt { get; set; }
 
+        public DateTime UpdatedAt { get; set; }
+
         // Navigation
-        public RecruiterProfile RecruiterProfile { get; set; } = null!;
+        public User User { get; set; } = null!;
     }
 }
