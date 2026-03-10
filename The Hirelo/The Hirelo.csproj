@@ -27,7 +27,6 @@
 
   <ItemGroup>
     <Folder Include="Common\" />
-    <Folder Include="Services\" />
     <Folder Include="Repositories\" />
     <Folder Include="NewFolder\" />
   </ItemGroup>

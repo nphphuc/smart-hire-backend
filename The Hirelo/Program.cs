@@ -93,7 +93,6 @@ namespace The_Hirelo
             builder.Services.AddSingleton<IWebSocketManager, The_Hirelo.Common.WebSocketManager>();
 
             // ── Background Workers ─────────────────────────────────────────────
-            builder.Services.AddHostedService<CVParseWorker>();
             builder.Services.AddHostedService<NotificationWorker>();
 
             // ── Controllers & Swagger ──────────────────────────────────────────
@@ -135,7 +134,7 @@ namespace The_Hirelo
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             // WebSocket phải đặt trước UseAuthentication
             app.UseWebSockets(new WebSocketOptions

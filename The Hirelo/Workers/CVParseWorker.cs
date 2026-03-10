@@ -93,17 +93,7 @@ namespace The_Hirelo.Workers
                     ?? throw new InvalidOperationException($"Profile {profileId} not found");
 
                 // getObject(fileKey) → raw file bytes
-                var s3Resp = await _s3.GetObjectAsync(new GetObjectRequest
-                {
-                    BucketName = bucket,
-                    Key = profile.FileKey
-                });
-                using var ms = new MemoryStream();
-                await s3Resp.ResponseStream.CopyToAsync(ms, ct);
-                var fileBytes = ms.ToArray();
-
-                // detectDocumentText → Textract
-                var rawText = await parseService.ExtractRawTextAsync(fileBytes);
+                var rawText = await parseService.ExtractRawTextAsync(bucket, profile.FileKey!);
 
                 // extractStructured → Bedrock
                 var structuredCV = await parseService.ExtractStructuredAsync(rawText);
@@ -112,8 +102,14 @@ namespace The_Hirelo.Workers
                 var matchResult = await parseService.MatchCVWithJDAsync(structuredCV, jobId);
 
                 // UPDATE candidate_profiles (parsed_skills, strengths, gaps, status: DONE)
-                profile.Seniority = structuredCV.Seniority;
-                profile.ParsedSkillsJson = JsonSerializer.Serialize(structuredCV.Skills);
+                profile.Seniority = structuredCV.SeniorityEstimate;
+                profile.ParsedSkillsJson = JsonSerializer.Serialize(new
+                {
+                    frontend = structuredCV.FrontendSkills,
+                    backend = structuredCV.BackendSkills,
+                    devops = structuredCV.DevopsSkills,
+                    soft = structuredCV.SoftSkills
+                });
                 profile.Strengths = matchResult.Strengths;
                 profile.Gaps = matchResult.Gaps;
                 profile.MatchingScore = matchResult.MatchingScore;

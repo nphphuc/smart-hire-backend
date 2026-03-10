@@ -1,10 +1,12 @@
-using System.Text.Json;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using System.Text.Json;
+using The_Hirelo.Data;
 using The_Hirelo.Models;
 using The_Hirelo.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace The_Hirelo.Services
 {
@@ -15,19 +17,22 @@ namespace The_Hirelo.Services
         private readonly ICandidateProfileRepository _profileRepo;
         private readonly IConfiguration _config;
         private readonly ILogger<CVService> _logger;
+        private readonly HireloDbContext _context;
 
         public CVService(
             IAmazonS3 s3,
             IAmazonSQS sqs,
             ICandidateProfileRepository profileRepo,
             IConfiguration config,
-            ILogger<CVService> logger)
+            ILogger<CVService> logger,
+            HireloDbContext context)
         {
             _s3 = s3;
             _sqs = sqs;
             _profileRepo = profileRepo;
             _config = config;
             _logger = logger;
+            _context = context;
         }
 
         // Step 1: putObject(cv_file) → S3
@@ -77,12 +82,15 @@ namespace The_Hirelo.Services
         public async Task PublishCVParseQueueAsync(Guid profileId, string fileKey, Guid jobId)
         {
             var queueUrl = _config["AWS:SQS:CVParseQueueUrl"]!;
+            var job = await _context.Jobs.FirstOrDefaultAsync(j => j.Id == jobId);
+            var jdText = job != null ? $"Title: {job.Title}\n\n{job.Description}" : "";
 
             var body = JsonSerializer.Serialize(new
             {
                 profileId = profileId.ToString(),
                 fileKey,
-                jobId = jobId.ToString()
+                jobId = jobId.ToString(),
+                jdText
             });
 
             await _sqs.SendMessageAsync(new SendMessageRequest

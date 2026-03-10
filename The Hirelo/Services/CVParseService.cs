@@ -16,7 +16,7 @@ namespace The_Hirelo.Services
         private readonly HireloDbContext _context;
         private readonly ILogger<CVParseService> _logger;
 
-        private const string ModelId = "anthropic.claude-3-sonnet-20240229-v1:0";
+        private const string ModelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
 
         public CVParseService(
             IAmazonTextract textract,
@@ -30,41 +30,47 @@ namespace The_Hirelo.Services
             _logger = logger;
         }
 
-        public async Task<string> ExtractRawTextAsync(byte[] fileBytes)
+        public async Task<string> ExtractRawTextAsync(string bucketName, string fileKey)
         {
             var response = await _textract.DetectDocumentTextAsync(new DetectDocumentTextRequest
             {
-                Document = new Document { Bytes = new MemoryStream(fileBytes) }
+                Document = new Document
+                {
+                    S3Object = new S3Object { Bucket = bucketName, Name = fileKey }
+                }
             });
 
-            var sb = new StringBuilder();
-            foreach (var block in response.Blocks.Where(b => b.BlockType == BlockType.LINE))
-                sb.AppendLine(block.Text);
+            var rawText = string.Join(" ", response.Blocks
+                .Where(b => b.BlockType == BlockType.LINE)
+                .Select(b => b.Text));
 
-            var rawText = sb.ToString();
             _logger.LogInformation("Textract extracted {Chars} characters", rawText.Length);
             return rawText;
         }
 
         public async Task<CVStructuredResult> ExtractStructuredAsync(string rawText)
         {
-            var prompt = "You are an expert HR assistant. Analyze the following CV text and extract structured information.\n\n"
-                + "CV TEXT:\n" + rawText + "\n\n"
-                + "Respond ONLY with a valid JSON object (no markdown) with this exact schema:\n"
+            var systemPrompt = "You are an expert technical recruiter AI evaluating a candidate's resume. "
+                + "Your task is to extract the candidate's skills and experience. "
+                + "You MUST output the result strictly as a valid JSON object. "
+                + "Do NOT include any conversational text or markdown formatting. Output ONLY the raw JSON. "
+                + "Strict JSON Schema to follow:\n"
                 + "{\n"
-                + "  \"seniority\": \"Junior|Mid|Senior|Lead|Principal\",\n"
-                + "  \"skills\": [\"skill1\", \"skill2\"],\n"
-                + "  \"summary\": \"brief professional summary\"\n"
+                + "  \"frontend_skills\": [\"array of strings\"],\n"
+                + "  \"backend_skills\": [\"array of strings\"],\n"
+                + "  \"devops_skills\": [\"array of strings\"],\n"
+                + "  \"soft_skills\": [\"array of strings\"],\n"
+                + "  \"years_experience\": 0,\n"
+                + "  \"seniority_estimate\": \"Junior/Mid/Senior\"\n"
                 + "}";
 
-            var responseText = await InvokeBedrockAsync(prompt);
+            var userMessage = "Please analyze this resume text:\n\n<resume>\n" + rawText + "\n</resume>";
+
+            var responseText = await InvokeBedrockAsync(systemPrompt, userMessage);
 
             var result = JsonSerializer.Deserialize<CVStructuredResult>(responseText,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                 ?? new CVStructuredResult();
-
-            _logger.LogInformation("Structured: seniority={Seniority}, skills={Count}",
-                result.Seniority, result.Skills.Count);
 
             return result;
         }
@@ -79,14 +85,12 @@ namespace The_Hirelo.Services
             }
 
             var jdContent = "Title: " + job.Title + "\n\n" + job.Description;
-            var cvSkills = string.Join(", ", cvData.Skills);
+            var allSkills = string.Join(", ",
+                (cvData.FrontendSkills ?? [])
+                .Concat(cvData.BackendSkills ?? [])
+                .Concat(cvData.DevopsSkills ?? []));
 
-            var prompt = "You are an expert technical recruiter. Evaluate how well this candidate matches the job.\n\n"
-                + "CANDIDATE:\n"
-                + "Seniority: " + cvData.Seniority + "\n"
-                + "Skills: " + cvSkills + "\n"
-                + "Summary: " + cvData.Summary + "\n\n"
-                + "JOB DESCRIPTION:\n" + jdContent + "\n\n"
+            var systemPrompt = "You are an expert technical recruiter. Evaluate how well this candidate matches the job. "
                 + "Respond ONLY with a valid JSON object (no markdown) with this exact schema:\n"
                 + "{\n"
                 + "  \"matchingScore\": 0,\n"
@@ -94,24 +98,31 @@ namespace The_Hirelo.Services
                 + "  \"gaps\": \"what candidate is missing for this role\"\n"
                 + "}";
 
-            var responseText = await InvokeBedrockAsync(prompt);
+            var userMessage = "CANDIDATE:\n"
+                + "Seniority: " + cvData.SeniorityEstimate + "\n"
+                + "Years Experience: " + cvData.YearsExperience + "\n"
+                + "Skills: " + allSkills + "\n\n"
+                + "JOB DESCRIPTION:\n" + jdContent;
+
+            var responseText = await InvokeBedrockAsync(systemPrompt, userMessage);
 
             var result = JsonSerializer.Deserialize<CVMatchResult>(responseText,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                 ?? new CVMatchResult();
 
             _logger.LogInformation("Match score for Job {JobId}: {Score}", jobId, result.MatchingScore);
-
             return result;
         }
 
-        private async Task<string> InvokeBedrockAsync(string prompt)
+        private async Task<string> InvokeBedrockAsync(string systemPrompt, string userMessage)
         {
             var body = JsonSerializer.Serialize(new
             {
                 anthropic_version = "bedrock-2023-05-31",
-                max_tokens = 1024,
-                messages = new[] { new { role = "user", content = prompt } }
+                max_tokens = 1000,
+                temperature = 0.0,
+                system = systemPrompt,
+                messages = new[] { new { role = "user", content = userMessage } }
             });
 
             var response = await _bedrock.InvokeModelAsync(new InvokeModelRequest
@@ -124,11 +135,7 @@ namespace The_Hirelo.Services
 
             var responseBody = await new StreamReader(response.Body).ReadToEndAsync();
             using var doc = JsonDocument.Parse(responseBody);
-
-            return doc.RootElement
-                .GetProperty("content")[0]
-                .GetProperty("text")
-                .GetString() ?? "{}";
+            return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString() ?? "{}";
         }
     }
 }
