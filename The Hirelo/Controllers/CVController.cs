@@ -177,5 +177,66 @@ namespace The_Hirelo.Controllers
             await socket.CloseAsync(result.CloseStatus!.Value, result.CloseStatusDescription, CancellationToken.None);
             _logger.LogInformation("WebSocket disconnected: {UserId}", cognitoSub);
         }
+
+        // GET /api/cv/my-profiles
+        // Candidate xem tất cả CV mình đã upload
+        [HttpGet("my-profiles")]
+        public async Task<ActionResult<List<CandidateProfileResponse>>> GetMyProfiles()
+        {
+            var cognitoSub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value;
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.CognitoSub == cognitoSub);
+            if (user == null)
+                return Unauthorized(new { message = "User not found." });
+
+            var profiles = await _profileRepo.GetByUserIdAsync(user.Id);
+
+            return Ok(profiles.Select(p => new CandidateProfileResponse
+            {
+                Id = p.Id,
+                UserId = p.UserId,
+                JobId = p.JobId,
+                FileUrl = p.FileUrl,
+                Seniority = p.Seniority,
+                ParsedSkillsJson = p.ParsedSkillsJson,
+                Strengths = p.Strengths,
+                Gaps = p.Gaps,
+                MatchingScore = p.MatchingScore,
+                Status = p.Status,
+                CreatedAt = p.CreatedAt ?? DateTime.UtcNow,
+                UpdatedAt = p.UpdatedAt
+            }));
+        }
+
+        // DELETE /api/cv/{profileId}
+        // Candidate xóa CV của mình
+        [HttpDelete("{profileId:guid}")]
+        public async Task<IActionResult> DeleteProfile(Guid profileId)
+        {
+            var cognitoSub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value;
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.CognitoSub == cognitoSub);
+            if (user == null)
+                return Unauthorized(new { message = "User not found." });
+
+            var profile = await _profileRepo.GetByIdAsync(profileId);
+            if (profile == null)
+                return NotFound(new { message = "Profile không tồn tại." });
+
+            // Chỉ cho phép xóa CV của chính mình
+            if (profile.UserId != user.Id)
+                return Forbid();
+
+            await _profileRepo.DeleteAsync(profile);
+
+            _logger.LogInformation("Profile deleted | ProfileId={Id} | UserId={UserId}", profileId, user.Id);
+
+            return NoContent();
+        }
+
     }
+
+
 }

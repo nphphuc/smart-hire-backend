@@ -14,14 +14,14 @@ namespace The_Hirelo.Repositories
         }
 
         public async Task<CandidateProfile?> GetByIdAsync(Guid profileId)
-            => await _context.CandidateProfiles
+                => await _context.CandidateProfiles
                 .Include(p => p.User)
                 .Include(p => p.Job)
                     .ThenInclude(j => j!.Recruiter)
                 .FirstOrDefaultAsync(p => p.Id == profileId);
 
         public async Task<List<CandidateProfile>> GetByJobIdAsync(Guid jobId)
-            => await _context.CandidateProfiles
+                => await _context.CandidateProfiles
                 .Include(p => p.User)
                 .Where(p => p.JobId == jobId)
                 .OrderByDescending(p => p.MatchingScore)
@@ -38,6 +38,19 @@ namespace The_Hirelo.Repositories
         {
             profile.UpdatedAt = DateTime.UtcNow;
             _context.CandidateProfiles.Update(profile);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<CandidateProfile>> GetByUserIdAsync(Guid userId)
+            => await _context.CandidateProfiles
+            .Include(p => p.Job)
+            .Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
+
+        public async Task DeleteAsync(CandidateProfile profile)
+        {
+            _context.CandidateProfiles.Remove(profile);
             await _context.SaveChangesAsync();
         }
     }
