@@ -96,4 +96,4 @@ docker-compose.override.yml
 *.temp
 *.md
 *.txt
-SeedData.cs
+*.yaml

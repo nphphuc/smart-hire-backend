@@ -9,8 +9,8 @@ namespace The_Hirelo.Services.Interfaces
         Task<RecruiterVerification?> GetByIdAsync(Guid verificationId);
         Task<List<RecruiterVerification>> GetAllAsync();
         Task<RecruiterVerification?> GetByUserIdAsync(Guid userId);
-        Task<bool> ApproveVerificationAsync(Guid verificationId);
-        Task<bool> RejectVerificationAsync(Guid verificationId);
+        Task<bool> ApproveVerificationAsync(Guid userId);
+        Task<bool> RejectVerificationAsync(Guid userId);
         Task<bool> RemoveRecruiterRoleAsync(Guid userId);
     }
 }

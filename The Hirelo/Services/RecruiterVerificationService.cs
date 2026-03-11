@@ -71,9 +71,9 @@ namespace The_Hirelo.Services
             return await _repository.GetByUserIdAsync(userId);
         }
 
-        public async Task<bool> ApproveVerificationAsync(Guid verificationId)
+        public async Task<bool> ApproveVerificationAsync(Guid userId)
         {
-            var verification = await _repository.GetByIdAsync(verificationId);
+            var verification = await _repository.GetByUserIdAsync(userId);
             if (verification == null) return false;
 
             verification.Status = VerificationStatus.Approved;
@@ -111,9 +111,9 @@ namespace The_Hirelo.Services
             return true;
         }
 
-        public async Task<bool> RejectVerificationAsync(Guid verificationId)
+        public async Task<bool> RejectVerificationAsync(Guid userId)
         {
-            var verification = await _repository.GetByIdAsync(verificationId);
+            var verification = await _repository.GetByUserIdAsync(userId);
             if (verification == null) return false;
 
             verification.Status = VerificationStatus.Rejected;

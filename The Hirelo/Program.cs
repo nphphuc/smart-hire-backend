@@ -5,6 +5,7 @@ using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using The_Hirelo.Data;
 using The_Hirelo.Repositories;
 using The_Hirelo.Repositories.Interfaces;
@@ -70,9 +71,12 @@ namespace The_Hirelo
 
             var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
                 ?? builder.Configuration.GetConnectionString("DefaultConnection");
+            // tam thoi comment dong phia tren de nham muc dich push docker
+            //var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");               
 
             Console.WriteLine("=== CONNECTION STRING DEBUG ===");
-            Console.WriteLine(Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "ENV NULL");
+            //Console.WriteLine(Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "ENV NULL");
+            Console.WriteLine(connectionString);
             Console.WriteLine("================================");
 
             builder.Services.AddDbContext<HireloDbContext>(options =>
@@ -155,8 +159,15 @@ namespace The_Hirelo
             builder.Services.AddScoped<IUserService, UserService>();
 
             builder.Services.AddScoped<IFileStorage, S3FileStorage>();
+            //builder.WebHost.UseUrls("http://0.0.0.0:8080");
 
             var app = builder.Build();
+
+            //using (var scope = app.Services.CreateScope())
+            //{
+            //    var db = scope.ServiceProvider.GetRequiredService<HireloDbContext>();
+            //    db.Database.Migrate();
+            //}
 
             // Call centralized seed class to seed admin
             try
@@ -168,13 +179,17 @@ namespace The_Hirelo
                 Console.WriteLine($"Admin seeding encountered an error: {ex.Message}");
             }
 
+
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
+            //if (app.Environment.IsDevelopment())
+            //{
+            //    app.UseSwagger();
+            //    app.UseSwaggerUI();
+            //}
+
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }
-
+            
             app.UseHttpsRedirection();
 
             app.UseAuthentication();

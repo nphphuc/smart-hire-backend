@@ -61,24 +61,24 @@ namespace The_Hirelo.Controllers
             return Ok(response);
         }
 
-        // POST /api/verification/{verificationId}/approve
-        [HttpPost("{verificationId}/approve")]
+        // POST /api/verification/{userId}/approve
+        [HttpPost("{userId}/approve")]
         //[Authorize(Roles = "Admin")]
         [Authorize]
-        public async Task<IActionResult> ApproveVerification(Guid verificationId)
+        public async Task<IActionResult> ApproveVerification(Guid userId)
         {
-            var result = await _verificationService.ApproveVerificationAsync(verificationId);
+            var result = await _verificationService.ApproveVerificationAsync(userId);
             if (!result) return NotFound();
             return Ok(new { message = "Verification approved and recruiter role assigned" });
         }
 
-        // POST /api/verification/{verificationId}/reject
-        [HttpPost("{verificationId}/reject")]
+        // POST /api/verification/{userId}/reject
+        [HttpPost("{userId}/reject")]
         //[Authorize(Roles = "Admin")]
         [Authorize]
-        public async Task<IActionResult> RejectVerification(Guid verificationId)
+        public async Task<IActionResult> RejectVerification(Guid userId)
         {
-            var result = await _verificationService.RejectVerificationAsync(verificationId);
+            var result = await _verificationService.RejectVerificationAsync(userId);
             if (!result) return NotFound();
             return Ok(new { message = "Verification rejected" });
         }

@@ -10,6 +10,7 @@ using The_Hirelo.Enums;
 using The_Hirelo.Models;
 using The_Hirelo.Services.Interfaces;
 
+
 namespace The_Hirelo.Services;
 
 public class AuthService : IAuthService

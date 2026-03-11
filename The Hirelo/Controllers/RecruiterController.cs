@@ -6,12 +6,14 @@ using The_Hirelo.Repositories.Interfaces;
 using The_Hirelo.DTOs.Requests;
 using The_Hirelo.Enums;
 using The_Hirelo.Models;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace The_Hirelo.Controllers
 {
     [ApiController]
     [Route("api/recruiter")]
     [Authorize]
+    [TypeFilter(typeof(RecruiterOnlyFilter))]
     public class RecruiterController : ControllerBase
     {
         private readonly IJobService _jobService;
@@ -230,6 +232,39 @@ namespace The_Hirelo.Controllers
             company.Name = dto.Name ?? company.Name;
             var updated = await _companyService.UpdateAsync(company);
             return Ok(updated);
+        }
+
+        // POST /api/recruiter/
+    }
+
+    // Action filter that ensures the authenticated user has UserRole.Recruiter
+    public class RecruiterOnlyFilter : IAsyncActionFilter
+    {
+        private readonly IUserRepository _userRepository;
+
+        public RecruiterOnlyFilter(IUserRepository userRepository)
+        {
+            _userRepository = userRepository;
+        }
+
+        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        {
+            var userPrincipal = context.HttpContext.User;
+            var cognitoSub = userPrincipal.GetCognitoSub();
+            if (string.IsNullOrEmpty(cognitoSub))
+            {
+                context.Result = new ForbidResult();
+                return;
+            }
+
+            var user = await _userRepository.GetByCognitoSubAsync(cognitoSub);
+            if (user == null || user.Role != UserRole.Recruiter)
+            {
+                context.Result = new ForbidResult();
+                return;
+            }
+
+            await next();
         }
     }
 }
