@@ -1,0 +1,41 @@
+name: Deploy Backend SAM
+
+on:
+  push:
+    branches: [ main, phuc, phatom ]
+
+permissions:
+  id-token: write # Bắt buộc để "thông" OIDC
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. Kết nối AWS qua OIDC
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-southeast-1 # Chọn Singapore cho nhanh 
+
+      # 2. Setup môi trường .NET
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # 3. Build Native AOT (Cái này cần Docker nên dùng --use-container)
+      - name: SAM Build
+        run: sam build --use-container
+
+      # 4. Deploy lên AWS
+      - name: SAM Deploy
+        run: |
+          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+            --stack-name my-backend-stack \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --region ap-southeast-1

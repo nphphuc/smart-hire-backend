@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  SmartHireApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: "./The Hirelo/"
+      Handler: The_Hirelo # Tên Assembly 
+      Runtime: dotnet8
+      MemorySize: 512
+      Timeout: 30
+      # Cấu hình để Lambda có quyền truy cập vào RDS
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: "rds-db:connect"
+              Resource: !Sub "arn:aws:rds-db:ap-southeast-1:${AWS::AccountId}:dbuser:*/smarthire_admin"
+      Events:
+        ProxyApi:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"

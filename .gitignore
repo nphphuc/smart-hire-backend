@@ -96,4 +96,3 @@ docker-compose.override.yml
 *.temp
 *.md
 *.txt
-*.yaml
