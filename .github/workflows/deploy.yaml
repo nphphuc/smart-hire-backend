@@ -48,7 +48,7 @@ jobs:
 
       # 3.5. Run EF Core migrations before deploy (requires network access to RDS)
       - name: Install dotnet-ef
-        run: dotnet tool install --global dotnet-ef
+        run: dotnet tool update --global dotnet-ef || dotnet tool install --global dotnet-ef
 
       - name: Run migrations
         env:
