@@ -52,8 +52,7 @@ jobs:
 
       - name: Run migrations
         env:
-          # RDS_CONNECTION_STRING: ${{ secrets.RDS_CONNECTION_STRING }}
-          DB_CONNECTION_STRING: ${{ secrets.RDS_CONNECTION_STRING }}
+          RDS_CONNECTION_STRING: ${{ secrets.RDS_CONNECTION_STRING }}
         run: |
           if [ -z "$RDS_CONNECTION_STRING" ]; then
             echo "RDS_CONNECTION_STRING secret is not set"
