@@ -29,7 +29,10 @@ jobs:
       #    dotnet-version: '8.0.x'
       # Setup SAM
       - name: Setup SAM CLI
-        uses: aws-actions/setup-sam@v2          
+        uses: aws-actions/setup-sam@v2
+
+      - name: Add .NET tools to PATH
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH          
 
       # 3. Build Native AOT (Cái này cần Docker nên dùng --use-container nếu cần thiết)
       - name: SAM Build
