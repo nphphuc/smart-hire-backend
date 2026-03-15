@@ -31,6 +31,23 @@ jobs:
       - name: SAM Build
         run: sam build --parallel # không cần container nữa, bao phê bao sướng :)
 
+      # 3.5. Run EF Core migrations before deploy (requires network access to RDS)
+      - name: Install dotnet-ef
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Run migrations
+        env:
+          RDS_CONNECTION_STRING: ${{ secrets.RDS_CONNECTION_STRING }}
+        run: |
+          if [ -z "$RDS_CONNECTION_STRING" ]; then
+            echo "RDS_CONNECTION_STRING secret is not set"
+            exit 1
+          fi
+          dotnet ef database update \
+            --project "The Hirelo/The Hirelo.csproj" \
+            --startup-project "The Hirelo/The Hirelo.csproj" \
+            --connection "$RDS_CONNECTION_STRING"
+
       # 4. Deploy lên AWS
       - name: SAM Deploy
         run: |

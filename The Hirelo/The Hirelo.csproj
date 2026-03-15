@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>The_Hirelo</AssemblyName> <RootNamespace>The_Hirelo</RootNamespace> <!--them cai nay thu-->
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>The_Hirelo</RootNamespace>
@@ -20,6 +21,7 @@
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="1.10.0" />
     <PackageReference Include="AWSSDK.CognitoIdentityProvider" Version="4.0.6" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.23" />
+    <PackageReference Include="AWSSDK.RDS" Version="4.0.18.3" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.18.7" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.24" />

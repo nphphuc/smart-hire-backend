@@ -10,13 +10,30 @@ Resources:
       Runtime: dotnet8
       MemorySize: 512
       Timeout: 30
+      # --- DÁN VÀO ĐÂY ---
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-0323869880612eb1f
+        SubnetIds:
+          - subnet-09e64b7d8270a9b71
+          - subnet-068218f5763210c39
+      Environment:
+        Variables:
+          # Thay giá trị thật của anh vào đây nè anh iu
+          # DB_CONNECTION: "Host=smarthire-postgres-dev.c7qcukycu0kl.ap-southeast-1.rds.amazonaws.com;Database=smarthiredb;Username=smarthire_admin;Password=yourpassword"
+          DB_HOST: "smarthire-postgres-dev.c7qcukycu0kl.ap-southeast-1.rds.amazonaws.com"
+          DB_PORT: "5432"
+          DB_NAME: "smarthiredb"
+          DB_USER: "smarthire_admin"
+          DB_PASSWORD: "Smarthire12345"
+          ASPNETCORE_ENVIRONMENT: Production
       # Cấu hình để Lambda có quyền truy cập vào RDS
       Policies:
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
               Action: "rds-db:connect"
-              Resource: !Sub "arn:aws:rds-db:ap-southeast-1:${AWS::AccountId}:dbuser:*/smarthire_admin"
+              Resource: !Sub "arn:aws:rds-db:ap-southeast-1:${AWS::AccountId}:dbuser:db-J36TMZ4E257PKD77LONP7SFDTI/smarthire_admin"
       Events:
         ProxyApi:
           Type: Api

@@ -25,6 +25,12 @@ namespace The_Hirelo.Data
             var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL");
             var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
 
+            if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
+            {
+                Console.WriteLine("SeedData: ADMIN_EMAIL or ADMIN_PASSWORD not set. Skipping admin seed.");
+                return;
+            }
+
             // If admin already exists in DB, skip
             var existing = db.Users.FirstOrDefault(u => u.Email == adminEmail);
             if (existing != null)
@@ -38,7 +44,8 @@ namespace The_Hirelo.Data
             try
             {
                 var poolId = configuration["AWS:Cognito:UserPoolId"]
-                             ?? Environment.GetEnvironmentVariable("AWS__Cognito__UserPoolId");
+    ?? Environment.GetEnvironmentVariable("AWS__Cognito__UserPoolId")
+    ?? Environment.GetEnvironmentVariable("AWS_USER_POOL_ID");
 
                 if (!string.IsNullOrWhiteSpace(poolId))
                 {

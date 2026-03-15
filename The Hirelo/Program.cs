@@ -1,4 +1,4 @@
-using Amazon;
+﻿using Amazon;
 using Amazon.CognitoIdentityProvider;
 using Amazon.S3;
 using DotNetEnv;
@@ -19,7 +19,10 @@ namespace The_Hirelo
     {
         public static void Main(string[] args)
         {
-            Env.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
+            //if (File.Exists(Path.Combine(Directory.GetCurrentDirectory(), ".env")))
+            //{
+            //    Env.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
+            //}
             var builder = WebApplication.CreateBuilder(args);
             
             // Load AWS credentials from environment variables
@@ -71,21 +74,49 @@ namespace The_Hirelo
 
             var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
                 ?? builder.Configuration.GetConnectionString("DefaultConnection");
+            // 1. Lấy biến lẻ từ template.yaml truyền vào
+            var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
+            var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+            var dbName = Environment.GetEnvironmentVariable("DB_NAME");
+            var dbUser = Environment.GetEnvironmentVariable("DB_USER");
+            var region = Environment.GetEnvironmentVariable("AWS_REGION") ?? "ap-southeast-1";
+
+            string finalConnectionString = "";
             // tam thoi comment dong phia tren de nham muc dich push docker
             //var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");               
 
+            if (!string.IsNullOrEmpty(dbHost) && !string.IsNullOrEmpty(dbUser))
+            {
+                var regionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region);
+                var authToken = Amazon.RDS.Util.RDSAuthTokenGenerator.GenerateAuthToken(regionEndpoint, dbHost, int.Parse(dbPort), dbUser);
+
+                finalConnectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={authToken};SSL Mode=Require;Trust Server Certificate=true;";
+            }
+            else
+            {
+                 finalConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            }
+
             Console.WriteLine("=== CONNECTION STRING DEBUG ===");
             //Console.WriteLine(Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "ENV NULL");
-            Console.WriteLine(connectionString);
+            //Console.WriteLine(connectionString);
+            Console.WriteLine($"CHECK - DB_HOST: '{dbHost}'");
+            Console.WriteLine($"CHECK - DB_USER: '{dbUser}'");
+            Console.WriteLine($"DEBUG - Final CS: '{finalConnectionString}'");
             Console.WriteLine("================================");
 
+            //builder.Services.AddDbContext<HireloDbContext>(options =>
+            //    options.UseNpgsql(connectionString)
+            //);
+
             builder.Services.AddDbContext<HireloDbContext>(options =>
-                options.UseNpgsql(connectionString)
+                options.UseNpgsql(finalConnectionString)
             );
 
             var awsRegion = Environment.GetEnvironmentVariable("AWS__Cognito__Region")
                 ?? Environment.GetEnvironmentVariable("AWS_REGION")
-                ?? builder.Configuration["AWS:Cognito:Region"];
+                ?? builder.Configuration["AWS:Cognito:Region"]
+                ?? "ap-southeast-1";
             var userPoolId = Environment.GetEnvironmentVariable("AWS__Cognito__UserPoolId")
                 ?? Environment.GetEnvironmentVariable("AWS_USER_POOL_ID")
                 ?? builder.Configuration["AWS:Cognito:UserPoolId"];
@@ -108,7 +139,16 @@ namespace The_Hirelo
             // Register AWS Cognito Identity Provider Client
             builder.Services.AddSingleton<IAmazonCognitoIdentityProvider>(sp =>
             {
-                return new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName(awsRegion));
+                var endpointRegion = awsRegion switch
+                {
+                    "us-east-1" => Amazon.RegionEndpoint.USEast1,
+                    "us-west-2" => Amazon.RegionEndpoint.USWest2,
+                    "eu-west-1" => Amazon.RegionEndpoint.EUWest1,
+                    "ap-southeast-1" => Amazon.RegionEndpoint.APSoutheast1,
+                    "ap-southeast-2" => Amazon.RegionEndpoint.APSoutheast2,
+                    _ => Amazon.RegionEndpoint.APSoutheast1
+                };
+                return new AmazonCognitoIdentityProviderClient(endpointRegion);
             });
 
             builder.Services.AddAuthentication(options =>
