@@ -11,7 +11,7 @@ permissions:
 jobs:
   deploy:
     # runs-on: ubuntu-latest tam comment dong nay
-    runs-on: [self-hosted, smarthire-dev]
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
