@@ -27,6 +27,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+          install-dir: $HOME/.dotnet
 
       # 3. Build Native AOT (Cái này cần Docker nên dùng --use-container nếu cần thiết)
       - name: SAM Build
