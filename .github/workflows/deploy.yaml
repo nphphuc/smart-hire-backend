@@ -2,7 +2,7 @@ name: Deploy Backend SAM
 
 on:
   push:
-    branches: [ main, phuc, phatom ]
+    branches: [ main, phuc]
 
 permissions:
   id-token: write # Bắt buộc để "thông" OIDC
