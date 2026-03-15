@@ -79,6 +79,7 @@ namespace The_Hirelo
             var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
             var dbName = Environment.GetEnvironmentVariable("DB_NAME");
             var dbUser = Environment.GetEnvironmentVariable("DB_USER");
+            var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
             var region = Environment.GetEnvironmentVariable("AWS_REGION") ?? "ap-southeast-1";
 
             string finalConnectionString = "";
@@ -87,10 +88,8 @@ namespace The_Hirelo
 
             if (!string.IsNullOrEmpty(dbHost) && !string.IsNullOrEmpty(dbUser))
             {
-                var regionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region);
-                var authToken = Amazon.RDS.Util.RDSAuthTokenGenerator.GenerateAuthToken(regionEndpoint, dbHost, int.Parse(dbPort), dbUser);
-
-                finalConnectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={authToken};SSL Mode=Require;Trust Server Certificate=true;";
+                // Use static DB password (non-IAM auth)
+                finalConnectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword};SSL Mode=Require;Trust Server Certificate=true;";
             }
             else
             {
