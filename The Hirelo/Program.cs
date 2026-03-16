@@ -234,6 +234,7 @@ namespace The_Hirelo
             app.UseHttpsRedirection();
 
             app.UseAuthentication();
+            app.UseMiddleware<The_Hirelo.Middleware.EnsureUserExistsMiddleware>();
             app.UseAuthorization();
 
             app.MapControllers();
