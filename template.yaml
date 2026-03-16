@@ -19,13 +19,13 @@ Resources:
           - subnet-068218f5763210c39
       Environment:
         Variables:
-          # Thay giá trị thật của anh vào đây nè anh iu
+          # Thay giá trị thật vào đây 
           # DB_CONNECTION: "Host=smarthire-postgres-dev.c7qcukycu0kl.ap-southeast-1.rds.amazonaws.com;Database=smarthiredb;Username=smarthire_admin;Password=yourpassword"
           DB_HOST: "smarthire-postgres-dev.c7qcukycu0kl.ap-southeast-1.rds.amazonaws.com"
           DB_PORT: "5432"
           DB_NAME: "smarthiredb"
           DB_USER: "smarthire_admin"
-          DB_PASSWORD: "Smarthire12345"
+          DB_PASSWORD: "SmartAI12345"
           ASPNETCORE_ENVIRONMENT: Production
       # Cấu hình để Lambda có quyền truy cập vào RDS
       Policies:
