@@ -30,6 +30,8 @@ Resources:
           AWS__Cognito__UserPoolId: "ap-southeast-1_weNyhwA2s"
           AWS__Cognito__ClientId: "5lurb983vbhlf0smkp5iksvb28"
           ASPNETCORE_ENVIRONMENT: Production
+          ADMIN_EMAIL: "admin@hirelo.com"
+          ADMIN_PASSWORD: "Admin123!"
       # Cấu hình để Lambda có quyền truy cập vào RDS
       Policies:
         - Version: '2012-10-17'
