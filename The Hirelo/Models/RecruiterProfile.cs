@@ -11,5 +11,9 @@
         public Company Company { get; set; } = null!;
 
         public ICollection<Job> Jobs { get; set; } = new List<Job>();
+
+        //Navigation
+        public RecruiterVerification? Verification { get; set; }
+        public bool IsVerified { get; set; }
     }
 }

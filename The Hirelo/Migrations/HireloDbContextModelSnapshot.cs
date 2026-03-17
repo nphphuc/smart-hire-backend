@@ -105,6 +105,9 @@ namespace The_Hirelo.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("text");
 
+                    b.Property<string>("TaxCode")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.ToTable("Companies");
@@ -223,6 +226,12 @@ namespace The_Hirelo.Migrations
                     b.Property<string>("Status")
                         .HasColumnType("text");
 
+                    b.Property<string>("TranscriptUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VideoUrl")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CandidateId");
@@ -242,6 +251,9 @@ namespace The_Hirelo.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("JdFileUrl")
                         .HasColumnType("text");
 
                     b.Property<Guid>("RecruiterId")
@@ -291,7 +303,13 @@ namespace The_Hirelo.Migrations
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("VerificationId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -301,7 +319,49 @@ namespace The_Hirelo.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
+                    b.HasIndex("VerificationId");
+
                     b.ToTable("RecruiterProfiles");
+                });
+
+            modelBuilder.Entity("The_Hirelo.Models.RecruiterVerification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CompanyTaxCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImagesJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("RecruiterEmail")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RecruiterVerifications");
                 });
 
             modelBuilder.Entity("The_Hirelo.Models.Scorecard", b =>
@@ -340,6 +400,7 @@ namespace The_Hirelo.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("CognitoSub")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
@@ -354,6 +415,12 @@ namespace The_Hirelo.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CognitoSub")
+                        .IsUnique();
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });
@@ -490,7 +557,24 @@ namespace The_Hirelo.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("The_Hirelo.Models.RecruiterVerification", "Verification")
+                        .WithMany()
+                        .HasForeignKey("VerificationId");
+
                     b.Navigation("Company");
+
+                    b.Navigation("User");
+
+                    b.Navigation("Verification");
+                });
+
+            modelBuilder.Entity("The_Hirelo.Models.RecruiterVerification", b =>
+                {
+                    b.HasOne("The_Hirelo.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

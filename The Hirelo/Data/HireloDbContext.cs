@@ -21,6 +21,7 @@ namespace The_Hirelo.Data
         public DbSet<Scorecard> Scorecards => Set<Scorecard>();
         public DbSet<InterviewReport> InterviewReports => Set<InterviewReport>();
         public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<RecruiterVerification> RecruiterVerifications { get; set; }
 
         public HireloDbContext(DbContextOptions<HireloDbContext> options)
         : base(options) { }
@@ -29,6 +30,29 @@ namespace The_Hirelo.Data
         {
             base.OnModelCreating(modelBuilder);
             // Configure relationships and constraints here if needed
+            modelBuilder.Entity<User>()
+                .Property(u => u.Role)
+                .HasConversion<string>();
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.CognitoSub)
+                .IsUnique();
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+
+            modelBuilder.Entity<InterviewSession>()
+                .Property(x => x.Status)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<RecruiterVerification>()
+                .HasOne(v => v.User)
+                .WithMany()
+                .HasForeignKey(v => v.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RecruiterVerification>()
+                .Property(v => v.ImagesJson)
+                .HasColumnType("jsonb");
         }
     }
 }

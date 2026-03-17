@@ -1,0 +1,73 @@
+name: Deploy Backend SAM
+
+on:
+  push:
+    branches: [ main, phuc]
+
+permissions:
+  id-token: write # Bắt buộc để "thông" OIDC
+  contents: read
+
+jobs:
+  deploy:
+    # runs-on: ubuntu-latest tam comment dong nay
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+             nuget-${{ runner.os }}-
+
+      # 1. Kết nối AWS qua OIDC
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-southeast-1 # Chọn Singapore cho nhanh 
+
+      # 2. Setup môi trường .NET
+      # - name: Setup .NET 8
+      #  uses: actions/setup-dotnet@v4
+      #  with:
+      #    dotnet-version: '8.0.x'
+      # Setup SAM
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Add .NET tools to PATH
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH          
+
+      # 3. Build Native AOT (Cái này cần Docker nên dùng --use-container nếu cần thiết)
+      - name: SAM Build
+        run: sam build --parallel # không cần container nữa, bao phê bao sướng :)
+
+      # 3.5. Run EF Core migrations before deploy (requires network access to RDS)
+      - name: Install dotnet-ef
+        run: dotnet tool update --global dotnet-ef || dotnet tool install --global dotnet-ef
+
+      - name: Run migrations
+        env:
+          RDS_CONNECTION_STRING: ${{ secrets.RDS_CONNECTION_STRING }}
+        run: |
+          if [ -z "$RDS_CONNECTION_STRING" ]; then
+            echo "RDS_CONNECTION_STRING secret is not set"
+            exit 1
+          fi
+          dotnet ef database update \
+            --project "The Hirelo/The Hirelo.csproj" \
+            --startup-project "The Hirelo/The Hirelo.csproj" \
+            --connection "$RDS_CONNECTION_STRING"
+
+      # 4. Deploy lên AWS
+      - name: SAM Deploy
+        run: |
+          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+            --stack-name my-backend-stack \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --region ap-southeast-1

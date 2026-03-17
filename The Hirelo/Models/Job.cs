@@ -14,5 +14,8 @@
         public RecruiterProfile Recruiter { get; set; } = null!;
 
         public ICollection<InterviewSession> InterviewSessions { get; set; } = new List<InterviewSession>();
+
+        // URL/path to uploaded job description file
+        public string? JdFileUrl { get; set; }
     }
 }
