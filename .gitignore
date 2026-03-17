@@ -97,4 +97,4 @@ docker-compose.override.yml
 *.md
 *.txt
 .aws-sam/
-*.yaml
+template.yaml
