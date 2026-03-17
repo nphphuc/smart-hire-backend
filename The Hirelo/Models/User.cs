@@ -1,23 +1,22 @@
-﻿using System;
+﻿namespace The_Hirelo.Models;
+using System;
 using System.Collections.Generic;
+using The_Hirelo.Enums;
 
-namespace The_Hirelo.Models;
-
-public partial class User
+public class User
 {
     public Guid Id { get; set; }
 
-    public string? CognitoSub { get; set; }
+    public string CognitoSub { get; set; } = null!;
 
     public string Email { get; set; } = null!;
 
-    public string Role { get; set; } = null!;
+    public UserRole Role { get; set; } = UserRole.Candidate;
 
     public DateTime CreatedAt { get; set; }
 
-    public virtual CandidateProfile? CandidateProfile { get; set; }
-
-    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
-
-    public virtual RecruiterProfile? RecruiterProfile { get; set; }
+    // Navigation
+    public RecruiterProfile? RecruiterProfile { get; set; }
+    public CandidateProfile? CandidateProfile { get; set; }
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 }

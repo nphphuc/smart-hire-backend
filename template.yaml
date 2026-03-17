@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  SmartHireApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: "./The Hirelo/"
+      Handler: The_Hirelo # Tên Assembly 
+      Runtime: dotnet8
+      MemorySize: 512
+      Timeout: 30
+      # --- DÁN VÀO ĐÂY ---
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-0323869880612eb1f
+        SubnetIds:
+          - subnet-09e64b7d8270a9b71
+          - subnet-068218f5763210c39
+      Environment:
+        Variables:
+          # Thay giá trị thật vào đây 
+          # DB_CONNECTION: "Host=smarthire-postgres-dev.c7qcukycu0kl.ap-southeast-1.rds.amazonaws.com;Database=smarthiredb;Username=smarthire_admin;Password=yourpassword"
+          DB_HOST: "smarthire-postgres-dev.c7qcukycu0kl.ap-southeast-1.rds.amazonaws.com"
+          DB_PORT: "5432"
+          DB_NAME: "smarthiredb"
+          DB_USER: "smarthire_admin"
+          DB_PASSWORD: "SmartAI12345"
+          AWS__Cognito__Region: "ap-southeast-1"
+          AWS__Cognito__UserPoolId: "ap-southeast-1_weNyhwA2s"
+          AWS__Cognito__ClientId: "5lurb983vbhlf0smkp5iksvb28"
+          ASPNETCORE_ENVIRONMENT: Production
+          ADMIN_EMAIL: "admin@hirelo.com"
+          ADMIN_PASSWORD: "Admin123!"
+      # Cấu hình để Lambda có quyền truy cập vào RDS
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: "rds-db:connect"
+              Resource: !Sub "arn:aws:rds-db:ap-southeast-1:${AWS::AccountId}:dbuser:db-J36TMZ4E257PKD77LONP7SFDTI/smarthire_admin"
+      Events:
+        ProxyApi:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
