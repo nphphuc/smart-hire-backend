@@ -16,7 +16,6 @@ using The_Hirelo.Repositories.Interfaces;
 using The_Hirelo.Services;
 using The_Hirelo.Services.Interfaces;
 using The_Hirelo.Storage;
-using The_Hirelo.Common;
 
 namespace The_Hirelo
 {
@@ -193,6 +192,8 @@ namespace The_Hirelo
             builder.Services.AddScoped<IReportRepository, ReportRepository>();
             builder.Services.AddScoped<IRecruiterVerificationRepository, RecruiterVerificationRepository>();
             builder.Services.AddScoped<IRecruiterVerificationService, RecruiterVerificationService>();
+            builder.Services.AddSingleton<IAmazonSQS>(_ => new AmazonSQSClient(RegionEndpoint.GetBySystemName(awsRegion)));
+            builder.Services.AddSingleton<IAmazonSimpleEmailService>(_ => new AmazonSimpleEmailServiceClient(RegionEndpoint.GetBySystemName(awsRegion)));
             builder.Services.AddScoped<ICVService, CVService>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddScoped<IAdminService, AdminService>();
