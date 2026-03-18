@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using The_Hirelo.Data;
 using The_Hirelo.DTOs.Responses;
+using The_Hirelo.Enums;
 
 namespace The_Hirelo.Services
 {
@@ -21,7 +22,8 @@ namespace The_Hirelo.Services
             var query = _context.Users.AsQueryable();
 
             if (!string.IsNullOrEmpty(role))
-                query = query.Where(u => u.Role == role);
+                if (Enum.TryParse<The_Hirelo.Enums.UserRole>(role, true, out var roleEnum))
+                    query = query.Where(u => u.Role == roleEnum);
 
             var total = await query.CountAsync();
             var data = await query
@@ -32,7 +34,7 @@ namespace The_Hirelo.Services
                 {
                     Id = u.Id,
                     Email = u.Email,
-                    Role = u.Role,
+                    Role = u.Role.ToString(),
                     CognitoSub = u.CognitoSub,
                     CreatedAt = u.CreatedAt
                 })
@@ -125,8 +127,10 @@ namespace The_Hirelo.Services
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return false;
-
-            user.Role = role;
+            if (Enum.TryParse<The_Hirelo.Enums.UserRole>(role, true, out var roleEnum))
+                user.Role = roleEnum;
+            else
+                return false;
             await _context.SaveChangesAsync();
             _logger.LogInformation("Admin updated role for user {UserId} to {Role}", userId, role);
             return true;

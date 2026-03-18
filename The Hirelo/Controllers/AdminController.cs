@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using The_Hirelo.Data;
 using The_Hirelo.DTOs.Responses;
+using The_Hirelo.Enums;
 using The_Hirelo.Services;
-using Microsoft.EntityFrameworkCore;
 
 namespace The_Hirelo.Controllers
 {
@@ -33,8 +34,8 @@ namespace The_Hirelo.Controllers
         {
             var query = _context.Users.AsQueryable();
 
-            if (!string.IsNullOrEmpty(role))
-                query = query.Where(u => u.Role == role);
+            if (Enum.TryParse<UserRole>(role, true, out var roleEnum))
+                query = query.Where(u => u.Role == roleEnum);
 
             var total = await query.CountAsync();
             var users = await query
@@ -45,7 +46,7 @@ namespace The_Hirelo.Controllers
                 {
                     Id = u.Id,
                     Email = u.Email,
-                    Role = u.Role,
+                    Role = u.Role.ToString(),
                     CognitoSub = u.CognitoSub,
                     CreatedAt = u.CreatedAt
                 })
@@ -168,7 +169,10 @@ namespace The_Hirelo.Controllers
             if (user == null)
                 return NotFound(new { message = "User không tồn tại." });
 
-            user.Role = request.Role;
+            if (Enum.TryParse<UserRole>(request.Role, true, out var roleEnum))
+                user.Role = roleEnum;
+            else
+                return BadRequest(new { message = "Role không hợp lệ. Dùng: Candidate, Recruiter, Admin" });
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Admin updated role for user {UserId} to {Role}", userId, request.Role);
