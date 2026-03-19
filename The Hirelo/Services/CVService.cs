@@ -101,5 +101,18 @@ namespace The_Hirelo.Services
 
             _logger.LogInformation("Published cv_parse_queue | ProfileId: {ProfileId}", profileId);
         }
+
+        public async Task<string> GeneratePresignedUploadUrlAsync(string fileKey, string? contentType)
+        {
+            var request = new GetPreSignedUrlRequest
+            {
+                BucketName = _config["AWS:S3:BucketName"],
+                Key = fileKey,
+                Verb = HttpVerb.PUT,
+                Expires = DateTime.UtcNow.AddMinutes(5),
+                ContentType = contentType ?? "application/octet-stream"
+            };
+            return await _s3.GetPreSignedURLAsync(request);
+        }
     }
 }

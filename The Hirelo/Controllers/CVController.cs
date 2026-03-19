@@ -1,7 +1,8 @@
+using Amazon.RDS.Internal;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using The_Hirelo.Common;
 using The_Hirelo.Data;
@@ -25,19 +26,22 @@ namespace The_Hirelo.Controllers
         private static readonly string[] AllowedExtensions = [".pdf", ".doc", ".docx"];
         private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10MB
         private readonly HireloDbContext _context;
+        private readonly IConfiguration _configuration;
 
         public CVController(
             ICVService cvService,
             ICandidateProfileRepository profileRepo,
             IWebSocketManager wsManager,
             ILogger<CVController> logger,
-            HireloDbContext context)
+            HireloDbContext context,
+            IConfiguration configuration)
         {
             _cvService = cvService;
             _profileRepo = profileRepo;
             _wsManager = wsManager;
             _logger = logger;
             _context = context;
+            _configuration = configuration;
         }
 
         // POST /api/cv/upload
@@ -91,6 +95,60 @@ namespace The_Hirelo.Controllers
             {
                 _logger.LogError(ex, "CV upload failed | User={UserId}", userId);
                 return StatusCode(500, new { message = $"Upload thất bại: {ex.Message}" });
+            }
+        }
+
+        // POST /api/cv/presigned-url
+        // FE gọi để lấy URL → tự PUT file lên S3
+        // S3 Event Notification tự trigger Lambda (không cần FE gọi thêm)
+        [HttpPost("presigned-url")]
+        public async Task<IActionResult> GetPresignedUrl([FromBody] CVPresignedUrlRequest request)
+        {
+            var cognitoSub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(cognitoSub))
+                return Unauthorized(new { message = "Invalid token" });
+
+            // Resolve userId từ DB — giống hệt endpoint upload cũ
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.CognitoSub == cognitoSub);
+            if (user == null)
+                return Unauthorized(new { message = "User not found in database." });
+
+            // Validate extension
+            var ext = Path.GetExtension(request.FileName).ToLowerInvariant();
+            if (!AllowedExtensions.Contains(ext))
+                return BadRequest(new { message = "Chỉ chấp nhận file PDF, DOC, DOCX." });
+
+            if (request.JobId == null || request.JobId == Guid.Empty)
+                return BadRequest(new { message = "JobId là bắt buộc." });
+
+            try
+            {
+                // Tạo fileKey theo đúng format của CVService hiện tại
+                var fileKey = $"cvs/{user.Id}/{Guid.NewGuid()}{ext}";
+
+                // Lấy presigned URL từ CVService (thêm method này vào ICVService)
+                var presignedUrl = await _cvService.GeneratePresignedUploadUrlAsync(fileKey, request.ContentType);
+
+                // INSERT candidate_profile với status PROCESSING ngay lúc này
+                var fileUrl = $"https://{_configuration["AWS:S3:BucketName"]}.s3.ap-southeast-1.amazonaws.com/{fileKey}";
+                var profile = await _cvService.CreateProfileAsync(user.Id, request.JobId.Value, fileUrl, fileKey);
+
+                _logger.LogInformation("Presigned URL issued | ProfileId={Id} | Job={JobId}", profile.Id, request.JobId);
+
+                return Ok(new CVPresignedUrlResponse
+                {
+                    PresignedUrl = presignedUrl,
+                    FileKey = fileKey,
+                    ProfileId = profile.Id,
+                    ExpiresInSeconds = 300
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Presigned URL generation failed | User={UserId}", user.Id);
+                return StatusCode(500, new { message = $"Tạo URL thất bại: {ex.Message}" });
             }
         }
 
