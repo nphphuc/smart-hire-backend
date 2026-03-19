@@ -8,20 +8,23 @@ Parameters:
     Default: Prod
   AllowedCorsOrigin:
     Type: String
+    Default: https://smarthire-ai.org
   VpcSecurityGroupId:
-    Type: String
+    Type: AWS::EC2::SecurityGroup::Id
   PrivateSubnetIdA:
-    Type: String
+    Type: AWS::EC2::Subnet::Id
   PrivateSubnetIdB:
-    Type: String
+    Type: AWS::EC2::Subnet::Id
   DbSecretArn:
     Type: String
   DbResourceId:
     Type: String
   DbUsername:
     Type: String
+    Default: smarthire_admin
   CognitoRegion:
     Type: String
+    Default: ap-southeast-1
   CognitoUserPoolId:
     Type: String
   CognitoClientId:
@@ -31,6 +34,7 @@ Parameters:
     Default: Production
   AdminEmail:
     Type: String
+    Default: admin@hirelo.com
   AdminPassword:
     Type: String
     NoEcho: true
@@ -39,8 +43,13 @@ Resources:
   SmartHireApi:
     Type: AWS::Serverless::Api
     Properties:
+      Name: !Sub smarthire-api-${ApiStageName}
       StageName: !Ref ApiStageName
       EndpointConfiguration: REGIONAL
+      Cors:
+        AllowMethods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: !Sub "'${AllowedCorsOrigin}'"
       Auth:
         DefaultAuthorizer: CognitoAuthorizer
         AddDefaultAuthorizerToCorsPreflight: false
@@ -49,15 +58,7 @@ Resources:
             UserPoolArn: !Sub "arn:aws:cognito-idp:${CognitoRegion}:${AWS::AccountId}:userpool/${CognitoUserPoolId}"
             Identity:
               Header: Authorization
-      Cors:
-        AllowMethods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-        AllowOrigin: !Sub "'${AllowedCorsOrigin}'"
-      MethodSettings:
-        - ResourcePath: "/*"
-          HttpMethod: "*"
-          LoggingLevel: INFO
-          MetricsEnabled: true
+              ReauthorizeEvery: 0
       # DefinitionBody:
         # swagger: "2.0"
         # info:
@@ -75,12 +76,18 @@ Resources:
               # gatewayresponse.header.Access-Control-Allow-Origin: "'${AllowedCorsOrigin}'"
               # gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
               # gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodSettings:
+        - ResourcePath: /*
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: true
+          MetricsEnabled: true
 
   SmartHireApiFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: "./The Hirelo/"
-      Handler: The_Hirelo
+      Handler: The_Hirelo::TheHirelo.Function::FunctionHandler
       Runtime: dotnet8
       MemorySize: 512
       Timeout: 30
@@ -103,7 +110,7 @@ Resources:
           ASPNETCORE_ENVIRONMENT: !Ref AspNetCoreEnvironment
           ADMIN_EMAIL: !Ref AdminEmail
           ADMIN_PASSWORD: !Ref AdminPassword
-          ALLOWED_CORS_ORIGIN: !Ref AllowedCorsOrigin
+          # ALLOWED_CORS_ORIGIN: !Ref AllowedCorsOrigin
       Policies:
         - Version: "2012-10-17"
           Statement:
@@ -125,5 +132,9 @@ Resources:
             Method: ANY
 
 Outputs:
+  ApiId:
+    Description: API Gateway REST API ID
+    Value: !Ref SmartHireApi
   ApiUrl:
+    Description: API Gateway base URL
     Value: !Sub "https://${SmartHireApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}/"
