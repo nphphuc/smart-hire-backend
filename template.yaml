@@ -91,7 +91,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: "./The Hirelo/"
-      Handler: The_Hirelo
+      Handler: The_Hirelo::The_Hirelo.LambdaEntryPoint::FunctionHandlerAsync
       Runtime: dotnet8
       MemorySize: 512
       Timeout: 30
