@@ -1,51 +1,129 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
+Description: SmartHire API Gateway + Lambda (Service Layer)
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: Prod
+  AllowedCorsOrigin:
+    Type: String
+  VpcSecurityGroupId:
+    Type: String
+  PrivateSubnetIdA:
+    Type: String
+  PrivateSubnetIdB:
+    Type: String
+  DbSecretArn:
+    Type: String
+  DbResourceId:
+    Type: String
+  DbUsername:
+    Type: String
+  CognitoRegion:
+    Type: String
+  CognitoUserPoolId:
+    Type: String
+  CognitoClientId:
+    Type: String
+  AspNetCoreEnvironment:
+    Type: String
+    Default: Production
+  AdminEmail:
+    Type: String
+  AdminPassword:
+    Type: String
+    NoEcho: true
 
 Resources:
+  SmartHireApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      EndpointConfiguration: REGIONAL
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !Sub "arn:aws:cognito-idp:${CognitoRegion}:${AWS::AccountId}:userpool/${CognitoUserPoolId}"
+            Identity:
+              Header: Authorization
+      Cors:
+        AllowMethods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: !Sub "'${AllowedCorsOrigin}'"
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          MetricsEnabled: true
+      DefinitionBody:
+        swagger: "2.0"
+        info:
+          title: SmartHireApi
+          version: "1.0"
+        paths: {}
+        x-amazon-apigateway-gateway-responses:
+          DEFAULT_4XX:
+            responseParameters:
+              gatewayresponse.header.Access-Control-Allow-Origin: "'${AllowedCorsOrigin}'"
+              gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+          DEFAULT_5XX:
+            responseParameters:
+              gatewayresponse.header.Access-Control-Allow-Origin: "'${AllowedCorsOrigin}'"
+              gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+
   SmartHireApiFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: "./The Hirelo/"
-      Handler: The_Hirelo # Tên Assembly 
+      Handler: The_Hirelo
       Runtime: dotnet8
       MemorySize: 512
       Timeout: 30
-      # --- DÁN VÀO ĐÂY ---
       VpcConfig:
         SecurityGroupIds:
-          - sg-0323869880612eb1f
+          - !Ref VpcSecurityGroupId
         SubnetIds:
-          - subnet-09e64b7d8270a9b71
-          - subnet-068218f5763210c39
+          - !Ref PrivateSubnetIdA
+          - !Ref PrivateSubnetIdB
       Environment:
         Variables:
-          # Thay giá trị thật vào đây 
-          # DB_CONNECTION: "Host=smarthire-postgres-dev.c7qcukycu0kl.ap-southeast-1.rds.amazonaws.com;Database=smarthiredb;Username=smarthire_admin;Password=yourpassword"
-          DB_HOST: "smarthire-postgres-dev.c7qcukycu0kl.ap-southeast-1.rds.amazonaws.com"
-          DB_PORT: "5432"
-          DB_NAME: "smarthiredb"
-          DB_USER: "smarthire_admin"
-          DB_PASSWORD: "SmartAI12345"
-          AWS__Cognito__Region: "ap-southeast-1"
-          AWS__Cognito__UserPoolId: "ap-southeast-1_weNyhwA2s"
-          AWS__Cognito__ClientId: "5lurb983vbhlf0smkp5iksvb28"
-          ASPNETCORE_ENVIRONMENT: Production
-          ADMIN_EMAIL: "admin@hirelo.com"
-          ADMIN_PASSWORD: "Admin123!"
-      # Cấu hình để Lambda có quyền truy cập vào RDS
+          DB_HOST: "{{resolve:secretsmanager:${DbSecretArn}:SecretString:host}}"
+          DB_PORT: "{{resolve:secretsmanager:${DbSecretArn}:SecretString:port}}"
+          DB_NAME: "{{resolve:secretsmanager:${DbSecretArn}:SecretString:dbname}}"
+          DB_USER: "{{resolve:secretsmanager:${DbSecretArn}:SecretString:username}}"
+          DB_PASSWORD: "{{resolve:secretsmanager:${DbSecretArn}:SecretString:password}}"
+          AWS__Cognito__Region: !Ref CognitoRegion
+          AWS__Cognito__UserPoolId: !Ref CognitoUserPoolId
+          AWS__Cognito__ClientId: !Ref CognitoClientId
+          ASPNETCORE_ENVIRONMENT: !Ref AspNetCoreEnvironment
+          ADMIN_EMAIL: !Ref AdminEmail
+          ADMIN_PASSWORD: !Ref AdminPassword
+          ALLOWED_CORS_ORIGIN: !Ref AllowedCorsOrigin
       Policies:
-        - Version: '2012-10-17'
+        - Version: "2012-10-17"
           Statement:
             - Effect: Allow
               Action: "rds-db:connect"
-              Resource: !Sub "arn:aws:rds-db:ap-southeast-1:${AWS::AccountId}:dbuser:db-J36TMZ4E257PKD77LONP7SFDTI/smarthire_admin"
+              Resource: !Sub "arn:aws:rds-db:${CognitoRegion}:${AWS::AccountId}:dbuser:${DbResourceId}/${DbUsername}"
       Events:
+        RootApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SmartHireApi
+            Path: /
+            Method: ANY
         ProxyApi:
           Type: Api
           Properties:
+            RestApiId: !Ref SmartHireApi
             Path: /{proxy+}
             Method: ANY
 
 Outputs:
   ApiUrl:
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+    Value: !Sub "https://${SmartHireApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}/"

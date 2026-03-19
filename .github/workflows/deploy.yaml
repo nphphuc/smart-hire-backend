@@ -2,7 +2,7 @@ name: Deploy Backend SAM
 
 on:
   push:
-    branches: [ main, phuc]
+    branches: [ main, phuc, phatom]
 
 permissions:
   id-token: write # Bắt buộc để "thông" OIDC
@@ -70,4 +70,19 @@ jobs:
             --stack-name my-backend-stack \
             --resolve-s3 \
             --capabilities CAPABILITY_IAM \
-            --region ap-southeast-1
+            --region ap-southeast-1 \
+            --parameter-overrides \
+              ApiStageName=Prod \
+              AllowedCorsOrigin=${{ secrets.ALLOWED_CORS_ORIGIN }} \
+              VpcSecurityGroupId=${{ secrets.VPC_SECURITY_GROUP_ID }} \
+              PrivateSubnetIdA=${{ secrets.PRIVATE_SUBNET_ID_A }} \
+              PrivateSubnetIdB=${{ secrets.PRIVATE_SUBNET_ID_B }} \
+              DbSecretArn=${{ secrets.DB_SECRET_ARN }} \
+              DbResourceId=${{ secrets.DB_RESOURCE_ID }} \
+              DbUsername=${{ secrets.DB_USERNAME }} \
+              CognitoRegion=${{ secrets.COGNITO_REGION }} \
+              CognitoUserPoolId=${{ secrets.COGNITO_USER_POOL_ID }} \
+              CognitoClientId=${{ secrets.COGNITO_CLIENT_ID }} \
+              AspNetCoreEnvironment=${{ secrets.ASPNETCORE_ENVIRONMENT }} \
+              AdminEmail=${{ secrets.ADMIN_EMAIL }} \
+              AdminPassword=${{ secrets.ADMIN_PASSWORD }}
