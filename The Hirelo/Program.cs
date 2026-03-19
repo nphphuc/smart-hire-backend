@@ -1,11 +1,15 @@
 ﻿using Amazon;
 using Amazon.CognitoIdentityProvider;
 using Amazon.S3;
+using Amazon.SimpleEmail;
+using Amazon.SQS;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using The_Hirelo.Common;
 using The_Hirelo.Data;
 using The_Hirelo.Repositories;
 using The_Hirelo.Repositories.Interfaces;
@@ -186,9 +190,15 @@ namespace The_Hirelo
             builder.Services.AddScoped<ICompanyService, CompanyService>();
             builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
             builder.Services.AddScoped<IReportRepository, ReportRepository>();
-
             builder.Services.AddScoped<IRecruiterVerificationRepository, RecruiterVerificationRepository>();
             builder.Services.AddScoped<IRecruiterVerificationService, RecruiterVerificationService>();
+            builder.Services.AddSingleton<IAmazonSQS>(_ => new AmazonSQSClient(RegionEndpoint.GetBySystemName(awsRegion)));
+            builder.Services.AddSingleton<IAmazonSimpleEmailService>(_ => new AmazonSimpleEmailServiceClient(RegionEndpoint.GetBySystemName(awsRegion)));
+            builder.Services.AddScoped<ICVService, CVService>();
+            builder.Services.AddScoped<INotificationService, NotificationService>();
+            builder.Services.AddScoped<IAdminService, AdminService>();
+            builder.Services.AddScoped<ICandidateProfileRepository, CandidateProfileRepository>();
+            builder.Services.AddSingleton<IWebSocketManager, The_Hirelo.Common.WebSocketManager>();
 
             // Auth Services
             builder.Services.AddScoped<IAuthService, AuthService>();
