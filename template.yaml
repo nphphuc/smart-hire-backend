@@ -45,6 +45,9 @@ Parameters:
   AdminPassword:
     Type: String
     NoEcho: true
+  EnableSwagger:
+    Type: String
+    Default: "true"
 
 Resources:
   SmartHireApi:
@@ -115,6 +118,7 @@ Resources:
           ADMIN_EMAIL: !Ref AdminEmail
           ADMIN_PASSWORD: !Ref AdminPassword
           ALLOWED_CORS_ORIGIN: !Ref AllowedCorsOrigin
+          ENABLE_SWAGGER: !Ref EnableSwagger
       Policies:
         - Version: "2012-10-17"
           Statement:
