@@ -78,6 +78,11 @@ jobs:
               PrivateSubnetIdA=${{ secrets.PRIVATE_SUBNET_ID_A }} \
               PrivateSubnetIdB=${{ secrets.PRIVATE_SUBNET_ID_B }} \
               DbSecretArn=${{ secrets.DB_SECRET_ARN }} \
+              DbHost=${{ secrets.DB_HOST }} \
+              DbPort=${{ secrets.DB_PORT }} \
+              DbName=${{ secrets.DB_NAME }} \
+              DbUser=${{ secrets.DB_USERNAME }} \
+              DbPassword=${{ secrets.DB_PASSWORD }} \
               DbResourceId=${{ secrets.DB_RESOURCE_ID }} \
               DbUsername=${{ secrets.DB_USERNAME }} \
               CognitoRegion=${{ secrets.COGNITO_REGION }} \
