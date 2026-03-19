@@ -211,6 +211,8 @@ namespace The_Hirelo
             //builder.WebHost.UseUrls("http://0.0.0.0:8080");
             // Day la lop bao ve de API chay duoc tren moi truong Lambda
             builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
+            // DI Container for CVService
+            builder.Services.AddScoped<ICVService, CVService>();
 
             var app = builder.Build();
 
