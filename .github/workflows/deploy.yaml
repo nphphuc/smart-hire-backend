@@ -90,4 +90,5 @@ jobs:
               CognitoClientId=${{ secrets.COGNITO_CLIENT_ID }} \
               AspNetCoreEnvironment=${{ secrets.ASPNETCORE_ENVIRONMENT }} \
               AdminEmail=${{ secrets.ADMIN_EMAIL }} \
-              AdminPassword=${{ secrets.ADMIN_PASSWORD }}
+              AdminPassword=${{ secrets.ADMIN_PASSWORD }} \
+              EnableSwagger=true
