@@ -58,23 +58,23 @@ Resources:
           HttpMethod: "*"
           LoggingLevel: INFO
           MetricsEnabled: true
-      DefinitionBody:
-        swagger: "2.0"
-        info:
-          title: SmartHireApi
-          version: "1.0"
-        paths: {}
-        x-amazon-apigateway-gateway-responses:
-          DEFAULT_4XX:
-            responseParameters:
-              gatewayresponse.header.Access-Control-Allow-Origin: "'${AllowedCorsOrigin}'"
-              gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-              gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
-          DEFAULT_5XX:
-            responseParameters:
-              gatewayresponse.header.Access-Control-Allow-Origin: "'${AllowedCorsOrigin}'"
-              gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-              gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      # DefinitionBody:
+        # swagger: "2.0"
+        # info:
+          # title: SmartHireApi
+          # version: "1.0"
+        # paths: {}
+        # x-amazon-apigateway-gateway-responses:
+          # DEFAULT_4XX:
+            # responseParameters:
+              # gatewayresponse.header.Access-Control-Allow-Origin: "'${AllowedCorsOrigin}'"
+              # gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              # gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+          # DEFAULT_5XX:
+            # responseParameters:
+              # gatewayresponse.header.Access-Control-Allow-Origin: "'${AllowedCorsOrigin}'"
+              # gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              # gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
 
   SmartHireApiFunction:
     Type: AWS::Serverless::Function
