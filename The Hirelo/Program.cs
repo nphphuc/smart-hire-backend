@@ -212,6 +212,16 @@ namespace The_Hirelo
             // Day la lop bao ve de API chay duoc tren moi truong Lambda
             builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
 
+            try
+            {
+                var sp = builder.Services.BuildServiceProvider();
+                sp.GetRequiredService<ICVService>(); // sẽ throw nếu có dependency lỗi
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"DI VALIDATION ERROR: {ex}");
+            }
+
             var app = builder.Build();
 
             //using (var scope = app.Services.CreateScope())
