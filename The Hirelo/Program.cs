@@ -213,6 +213,16 @@ namespace The_Hirelo
             builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
             // DI Container for CVService            
 
+            try
+            {
+                var sp = builder.Services.BuildServiceProvider();
+                sp.GetRequiredService<ICVService>(); // sẽ throw nếu có dependency lỗi
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"DI VALIDATION ERROR: {ex}");
+            }
+
             var app = builder.Build();
 
             //using (var scope = app.Services.CreateScope())
