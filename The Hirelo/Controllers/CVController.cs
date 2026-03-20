@@ -148,7 +148,12 @@ namespace The_Hirelo.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Presigned URL generation failed | User={UserId}", user.Id);
-                return StatusCode(500, new { message = $"Tạo URL thất bại: {ex.Message}" });
+                return StatusCode(500, new
+                {
+                    message = $"Tạo URL thất bại: {ex.Message}",
+                    inner = ex.InnerException?.Message,
+                    inner2 = ex.InnerException?.InnerException?.Message
+                });
             }
         }
 
