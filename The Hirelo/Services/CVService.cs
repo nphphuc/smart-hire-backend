@@ -69,7 +69,7 @@ namespace The_Hirelo.Services
                 FileUrl = fileUrl,
                 FileKey = fileKey,
                 Status = CandidateProfileStatus.Processing,
-                CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
+                CreatedAt = DateTime.UtcNow
             };
 
             await _profileRepo.CreateAsync(profile);
