@@ -16,6 +16,7 @@ using The_Hirelo.Repositories.Interfaces;
 using The_Hirelo.Services;
 using The_Hirelo.Services.Interfaces;
 using The_Hirelo.Storage;
+using Amazon.StepFunctions;
 
 namespace The_Hirelo
 {
@@ -211,6 +212,7 @@ namespace The_Hirelo
             //builder.WebHost.UseUrls("http://0.0.0.0:8080");
             // Day la lop bao ve de API chay duoc tren moi truong Lambda
             builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
+            builder.Services.AddAWSService<IAmazonStepFunctions>();
 
             try
             {

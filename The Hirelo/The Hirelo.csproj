@@ -12,6 +12,10 @@
 
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="1.10.0" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.8.1" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" /> 
+    <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.0" />
+
     <PackageReference Include="AWSSDK.BedrockRuntime" Version="4.0.16.3" />
     <PackageReference Include="AWSSDK.CognitoIdentityProvider" Version="4.0.6" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.23" />
@@ -20,13 +24,16 @@
     <PackageReference Include="AWSSDK.SimpleEmail" Version="4.0.2.16" />
     <PackageReference Include="AWSSDK.SQS" Version="4.0.2.17" />
     <PackageReference Include="AWSSDK.Textract" Version="4.0.3.16" />
+    <PackageReference Include="AWSSDK.StepFunctions" Version="4.0.2.13" />
+
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.24" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.24" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.10" />
+
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageReference Include="DotNetEnv" Version="2.4.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.24" />
   </ItemGroup>
 
   <ItemGroup>
