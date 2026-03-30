@@ -1,6 +1,7 @@
 using Amazon;
 using Amazon.CognitoIdentityProvider;
 using Amazon.S3;
+using Amazon.StepFunctions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -39,6 +40,7 @@ public class Startup
         }
 
         services.AddAWSService<IAmazonS3>();
+        services.AddAWSService<IAmazonStepFunctions>();
 
         services.AddControllers();
         services.AddEndpointsApiExplorer();

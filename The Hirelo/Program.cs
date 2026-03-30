@@ -1,15 +1,12 @@
-﻿using Amazon;
+using Amazon;
 using Amazon.CognitoIdentityProvider;
 using Amazon.S3;
-using Amazon.SimpleEmail;
-using Amazon.SQS;
+using Amazon.StepFunctions;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System;
-using The_Hirelo.Common;
 using The_Hirelo.Data;
 using The_Hirelo.Repositories;
 using The_Hirelo.Repositories.Interfaces;
@@ -43,6 +40,7 @@ namespace The_Hirelo
             }
 
             builder.Services.AddAWSService<IAmazonS3>();
+            builder.Services.AddAWSService<IAmazonStepFunctions>();
 
             // Add services to the container.
 
@@ -190,15 +188,9 @@ namespace The_Hirelo
             builder.Services.AddScoped<ICompanyService, CompanyService>();
             builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
             builder.Services.AddScoped<IReportRepository, ReportRepository>();
+
             builder.Services.AddScoped<IRecruiterVerificationRepository, RecruiterVerificationRepository>();
             builder.Services.AddScoped<IRecruiterVerificationService, RecruiterVerificationService>();
-            builder.Services.AddSingleton<IAmazonSQS>(_ => new AmazonSQSClient(RegionEndpoint.GetBySystemName(awsRegion)));
-            builder.Services.AddSingleton<IAmazonSimpleEmailService>(_ => new AmazonSimpleEmailServiceClient(RegionEndpoint.GetBySystemName(awsRegion)));
-            builder.Services.AddScoped<ICVService, CVService>();
-            builder.Services.AddScoped<INotificationService, NotificationService>();
-            builder.Services.AddScoped<IAdminService, AdminService>();
-            builder.Services.AddScoped<ICandidateProfileRepository, CandidateProfileRepository>();
-            builder.Services.AddSingleton<IWebSocketManager, The_Hirelo.Common.WebSocketManager>();
 
             // Auth Services
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -211,17 +203,6 @@ namespace The_Hirelo
             //builder.WebHost.UseUrls("http://0.0.0.0:8080");
             // Day la lop bao ve de API chay duoc tren moi truong Lambda
             builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
-            // DI Container for CVService            
-
-            try
-            {
-                var sp = builder.Services.BuildServiceProvider();
-                sp.GetRequiredService<ICVService>(); // sẽ throw nếu có dependency lỗi
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"DI VALIDATION ERROR: {ex}");
-            }
 
             var app = builder.Build();
 
