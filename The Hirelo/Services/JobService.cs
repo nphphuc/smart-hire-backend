@@ -56,11 +56,14 @@ namespace The_Hirelo.Services
 
             if (!string.IsNullOrWhiteSpace(dto.Description))
             {
-                _ = Task.Run(async () =>
-                {
-                    try { await TriggerJdProcessingAsync(job.Id); }
-                    catch (Exception ex) { _logger.LogWarning(ex, "JD processing trigger failed for job {JobId}", job.Id); }
-                });
+                try 
+                { 
+                    await TriggerJdProcessingAsync(job.Id); 
+                }
+                catch (Exception ex) 
+                { 
+                    _logger.LogWarning(ex, "JD processing trigger failed for job {JobId}", job.Id); 
+                }
             }
 
             return new JobResponse { Id = job.Id, Title = job.Title, Description = job.Description };
@@ -128,11 +131,14 @@ namespace The_Hirelo.Services
 
             if (dto.Description != null && !string.IsNullOrWhiteSpace(dto.Description))
             {
-                _ = Task.Run(async () =>
-                {
-                    try { await TriggerJdProcessingAsync(job.Id); }
-                    catch (Exception ex) { _logger.LogWarning(ex, "JD processing trigger failed for job {JobId}", job.Id); }
-                });
+                try 
+                { 
+                    await TriggerJdProcessingAsync(job.Id); 
+                }
+                catch (Exception ex) 
+                { 
+                    _logger.LogWarning(ex, "JD processing trigger failed for job {JobId}", job.Id); 
+                }
             }
 
             return new JobResponse { Id = job.Id, Title = job.Title, Description = job.Description };
