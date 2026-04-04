@@ -70,7 +70,7 @@ Resources:
   SmartHireApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../backend/The Hirelo/
+      CodeUri: "../../backend/The Hirelo/"
       Handler: The_Hirelo
       Runtime: dotnet8
       MemorySize: 512
