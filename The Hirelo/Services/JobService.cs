@@ -86,8 +86,36 @@ namespace The_Hirelo.Services
             {
                 Id = j.Id,
                 Title = j.Title,
-                CreatedAt = j.CreatedAt
+                CreatedAt = j.CreatedAt,
+                CompanyName = j.Recruiter?.Company?.Name,
             });
+        }
+
+        public async Task<IEnumerable<JobCatalogItemResponse>> GetCandidateJobCatalogAsync()
+        {
+            var jobs = await _jobRepository.GetAllForCatalogAsync();
+            return jobs.Select(j => new JobCatalogItemResponse
+            {
+                JobId = j.Id,
+                JobTitle = j.Title,
+                CompanyName = j.Recruiter?.Company?.Name,
+                JdText = j.Description,
+                CreatedAt = j.CreatedAt,
+            });
+        }
+
+        public async Task<JobCatalogItemResponse?> GetCandidateCatalogJobAsync(Guid jobId)
+        {
+            var j = await _jobRepository.GetByIdAsync(jobId);
+            if (j == null) return null;
+            return new JobCatalogItemResponse
+            {
+                JobId = j.Id,
+                JobTitle = j.Title,
+                CompanyName = j.Recruiter?.Company?.Name,
+                JdText = j.Description,
+                CreatedAt = j.CreatedAt,
+            };
         }
 
         public async Task<JobDetailResponse> GetJobByIdAsync(Guid jobId)

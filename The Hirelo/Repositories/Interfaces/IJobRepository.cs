@@ -7,6 +7,8 @@ namespace The_Hirelo.Repositories.Interfaces
         Task<Job> CreateAsync(Job job);
         Task<Job?> GetByIdAsync(Guid id);
         Task<IEnumerable<Job>> GetByRecruiterIdAsync(Guid recruiterId);
+        /// <summary>All jobs with recruiter/company for candidate job board.</summary>
+        Task<IEnumerable<Job>> GetAllForCatalogAsync();
         Task<Job> UpdateAsync(Job job);
         Task DeleteAsync(Guid id);
         Task SaveJdFileMetadataAsync(Guid jobId, string fileUrl);

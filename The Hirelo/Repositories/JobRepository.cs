@@ -41,6 +41,16 @@ namespace The_Hirelo.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Job>> GetAllForCatalogAsync()
+        {
+            return await _context.Jobs
+                .AsNoTracking()
+                .Include(j => j.Recruiter)
+                    .ThenInclude(r => r.Company)
+                .OrderByDescending(j => j.CreatedAt)
+                .ToListAsync();
+        }
+
         public async Task<Job?> GetByIdAsync(Guid id)
         {
             return await _context.Jobs
