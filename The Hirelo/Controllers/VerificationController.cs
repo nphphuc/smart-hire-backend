@@ -94,6 +94,19 @@ namespace The_Hirelo.Controllers
             return Ok(new { message = "Recruiter role removed" });
         }
 
+        [HttpGet("me")]
+        public async Task<IActionResult> GetMyVerification()
+        {
+            var cognitoSub = User.GetCognitoSub();
+            if (string.IsNullOrEmpty(cognitoSub)) return Forbid();
+            var user = await _userRepository.GetByCognitoSubAsync(cognitoSub);
+            if (user is null) return Forbid();
+            var verification = await _verificationService.GetByUserIdAsync(user.Id);
+            if (verification is null) return NotFound();
+            var response = MapToResponse(verification);
+            return Ok(response);
+        }
+
         private RecruiterVerificationResponse MapToResponse(The_Hirelo.Models.RecruiterVerification verification)
         {
             object? images = null;

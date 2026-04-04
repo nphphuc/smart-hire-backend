@@ -6,9 +6,13 @@ namespace The_Hirelo.Controllers
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase
     {
+        //private static readonly string[] Summaries = new[]
+        //{
+        //    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+        //};
         private static readonly string[] Summaries = new[]
         {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+            "Freezing", "Bracing", "My name is Phuc"
         };
 
         private readonly ILogger<WeatherForecastController> _logger;

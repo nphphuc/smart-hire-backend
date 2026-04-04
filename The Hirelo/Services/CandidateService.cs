@@ -8,9 +8,12 @@ namespace The_Hirelo.Services
     public class CandidateService : ICandidateService
     {
         private readonly ICandidateRepository _candidateRepository;
-        public CandidateService(ICandidateRepository candidateRepository)
+        private readonly ICvRepository _cvRepository;
+
+        public CandidateService(ICandidateRepository candidateRepository, ICvRepository cvRepository)
         {
             _candidateRepository = candidateRepository;
+            _cvRepository = cvRepository;
         }
 
         public async Task<IEnumerable<CandidateListItemResponse>> GetCandidatesByJobAsync(Guid jobId)
@@ -41,6 +44,21 @@ namespace The_Hirelo.Services
         public async Task UpdateCandidateStatusAsync(Guid candidateId, ApplicationStatus status)
         {
             await _candidateRepository.UpdateStatusAsync(candidateId, status);
+        }
+
+        public async Task<CvParseResultResponse?> GetLatestCvByCandidateIdAsync(string candidateId)
+        {
+            return await _cvRepository.GetLatestCvByCandidateIdAsync(candidateId);
+        }
+
+        public async Task<IEnumerable<CvParseResultResponse>> GetAllCvsByCandidateIdAsync(string candidateId)
+        {
+            return await _cvRepository.GetAllCvsByCandidateIdAsync(candidateId);
+        }
+
+        public async Task<bool> HasCandidateAppliedToRecruiterJobAsync(Guid candidateId, Guid recruiterProfileId)
+        {
+            return await _candidateRepository.HasCandidateAppliedToRecruiterJobAsync(candidateId, recruiterProfileId);
         }
     }
 }

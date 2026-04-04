@@ -1,6 +1,7 @@
-﻿using Amazon;
+using Amazon;
 using Amazon.CognitoIdentityProvider;
 using Amazon.S3;
+using Amazon.StepFunctions;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,7 @@ using The_Hirelo.Repositories.Interfaces;
 using The_Hirelo.Services;
 using The_Hirelo.Services.Interfaces;
 using The_Hirelo.Storage;
+using Amazon.StepFunctions;
 
 namespace The_Hirelo
 {
@@ -39,6 +41,7 @@ namespace The_Hirelo
             }
 
             builder.Services.AddAWSService<IAmazonS3>();
+            builder.Services.AddAWSService<IAmazonStepFunctions>();
 
             // Add services to the container.
 
@@ -173,6 +176,16 @@ namespace The_Hirelo
                 options.MapInboundClaims = true;
             });
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                });
+            });
+
             builder.Services.AddAuthorization();
 
             // Register repositories and services
@@ -180,6 +193,11 @@ namespace The_Hirelo
             builder.Services.AddScoped<IJobService, JobService>();
             builder.Services.AddScoped<ICandidateRepository, CandidateRepository>();
             builder.Services.AddScoped<ICandidateService, CandidateService>();
+            builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
+            builder.Services.AddScoped<IApplicationService, ApplicationService>();
+            builder.Services.AddScoped<IApplicationTrackingService, ApplicationTrackingService>();
+            builder.Services.AddScoped<ICvRepository, CvRepository>();
+            builder.Services.AddScoped<IJdRepository, JdRepository>();
             builder.Services.AddScoped<IComparisonService, ComparisonService>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
@@ -201,6 +219,8 @@ namespace The_Hirelo
             //builder.WebHost.UseUrls("http://0.0.0.0:8080");
             // Day la lop bao ve de API chay duoc tren moi truong Lambda
             builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
+
+            builder.Services.AddAWSService<IAmazonStepFunctions>();
 
             var app = builder.Build();
 
@@ -232,6 +252,8 @@ namespace The_Hirelo
                 app.UseSwaggerUI();
             
             app.UseHttpsRedirection();
+
+            app.UseCors("AllowAll");
 
             app.UseAuthentication();
             app.UseMiddleware<The_Hirelo.Middleware.EnsureUserExistsMiddleware>();

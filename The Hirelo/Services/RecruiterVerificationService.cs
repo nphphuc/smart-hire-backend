@@ -5,6 +5,8 @@ using The_Hirelo.Models;
 using The_Hirelo.Repositories.Interfaces;
 using The_Hirelo.Services.Interfaces;
 using The_Hirelo.Storage;
+using The_Hirelo.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace The_Hirelo.Services
 {
@@ -13,15 +15,18 @@ namespace The_Hirelo.Services
         private readonly IRecruiterVerificationRepository _repository;
         private readonly IFileStorage _storage;
         private readonly IUserRepository _userRepository;
+        private readonly HireloDbContext _context;
 
         public RecruiterVerificationService(
         IRecruiterVerificationRepository repository,
         IFileStorage storage,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        HireloDbContext context)
         {
             _repository = repository;
             _storage = storage;
             _userRepository = userRepository;
+            _context = context;
         }
 
         public async Task<Guid> SubmitAsync(Guid userId, RecruiterVerificationRequest request)
@@ -78,35 +83,67 @@ namespace The_Hirelo.Services
 
             verification.Status = VerificationStatus.Approved;
             verification.UpdatedAt = DateTime.UtcNow;
-            await _repository.UpdateAsync(verification);
 
-            // Create RecruiterProfile for this user
-            var user = await _userRepository.GetByIdAsync(verification.UserId);
-            if (user != null && user.RecruiterProfile == null)
-            {
-                // Create default company if not exists
-                var company = new Company
-                {
-                    Id = Guid.NewGuid(),
-                    Name = verification.CompanyName,
-                    TaxCode = verification.CompanyTaxCode,
-                    CreatedAt = DateTime.UtcNow
-                };
+            var user = await _context.Users
+        .Include(u => u.RecruiterProfile)
+        .FirstOrDefaultAsync(u => u.Id == userId);
 
-                var recruiterProfile = new RecruiterProfile
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.Id,
-                    CompanyId = company.Id,
-                    User = user,
-                    Company = company,
-                    IsVerified = true
-                };
+    if (user == null) return false;
 
-                user.RecruiterProfile = recruiterProfile;
-                user.Role = UserRole.Recruiter;
-                await _userRepository.UpdateAsync(user);
-            }
+    if (user.RecruiterProfile == null)
+    {
+        var company = new Company
+        {
+            Id = Guid.NewGuid(),
+            Name = verification.CompanyName,
+            TaxCode = verification.CompanyTaxCode,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var recruiterProfile = new RecruiterProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            Company = company,
+            IsVerified = true
+        };
+
+        _context.Companies.Add(company);
+        _context.RecruiterProfiles.Add(recruiterProfile);
+    }
+
+    user.Role = UserRole.Recruiter;
+
+    await _context.SaveChangesAsync();
+            // await _repository.UpdateAsync(verification);
+
+            // // Create RecruiterProfile for this user
+            // var user = await _userRepository.GetByIdAsync(verification.UserId);
+            // if (user != null && user.RecruiterProfile == null)
+            // {
+            //     // Create default company if not exists
+            //     var company = new Company
+            //     {
+            //         Id = Guid.NewGuid(),
+            //         Name = verification.CompanyName,
+            //         TaxCode = verification.CompanyTaxCode,
+            //         CreatedAt = DateTime.UtcNow
+            //     };
+
+            //     var recruiterProfile = new RecruiterProfile
+            //     {
+            //         Id = Guid.NewGuid(),
+            //         UserId = user.Id,
+            //         CompanyId = company.Id,
+            //         User = user,
+            //         Company = company,
+            //         IsVerified = true
+            //     };
+
+            //     user.RecruiterProfile = recruiterProfile;
+            //     user.Role = UserRole.Recruiter;
+            //     await _userRepository.UpdateAsync(user.Id, user);
+            // }
 
             return true;
         }

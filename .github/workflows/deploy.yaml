@@ -2,7 +2,7 @@ name: Deploy Backend SAM
 
 on:
   push:
-    branches: [ main, phuc]
+    branches: [ main, phuc, phatom]
 
 permissions:
   id-token: write # Bắt buộc để "thông" OIDC
@@ -44,7 +44,8 @@ jobs:
 
       # 3. Build Native AOT (Cái này cần Docker nên dùng --use-container nếu cần thiết)
       - name: SAM Build
-        run: sam build --parallel # không cần container nữa, bao phê bao sướng :)
+        # run: sam build --parallel # không cần container nữa, bao phê bao sướng :)
+        run: sam build -t iac/sam/template.yaml --parallel
 
       # 3.5. Run EF Core migrations before deploy (requires network access to RDS)
       - name: Install dotnet-ef
@@ -66,8 +67,30 @@ jobs:
       # 4. Deploy lên AWS
       - name: SAM Deploy
         run: |
-          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+          sam deploy -t iac/sam/template.yaml --no-confirm-changeset \ 
+            --no-fail-on-empty-changeset \
             --stack-name my-backend-stack \
             --resolve-s3 \
             --capabilities CAPABILITY_IAM \
-            --region ap-southeast-1
+            --region ap-southeast-1 \
+            --parameter-overrides \
+              ApiStageName=Prod \
+              AllowedCorsOrigin=${{ secrets.ALLOWED_CORS_ORIGIN }} \
+              VpcSecurityGroupId=${{ secrets.VPC_SECURITY_GROUP_ID }} \
+              PrivateSubnetIdA=${{ secrets.PRIVATE_SUBNET_ID_A }} \
+              PrivateSubnetIdB=${{ secrets.PRIVATE_SUBNET_ID_B }} \
+              DbSecretArn=${{ secrets.DB_SECRET_ARN }} \
+              DbHost=${{ secrets.DB_HOST }} \
+              DbPort=${{ secrets.DB_PORT }} \
+              DbName=${{ secrets.DB_NAME }} \
+              DbUser=${{ secrets.DB_USERNAME }} \
+              DbPassword=${{ secrets.DB_PASSWORD }} \
+              DbResourceId=${{ secrets.DB_RESOURCE_ID }} \
+              DbUsername=${{ secrets.DB_USERNAME }} \
+              CognitoRegion=${{ secrets.COGNITO_REGION }} \
+              CognitoUserPoolId=${{ secrets.COGNITO_USER_POOL_ID }} \
+              CognitoClientId=${{ secrets.COGNITO_CLIENT_ID }} \
+              AspNetCoreEnvironment=${{ secrets.ASPNETCORE_ENVIRONMENT }} \
+              AdminEmail=${{ secrets.ADMIN_EMAIL }} \
+              AdminPassword=${{ secrets.ADMIN_PASSWORD }} \
+              EnableSwagger=true

@@ -10,8 +10,11 @@ namespace The_Hirelo.Services.Interfaces
         Task<JobResponse> UpdateJobAsync(Guid jobId, UpdateJobRequest dto, IFormFile? jdFile);
         Task<JobDetailResponse> GetJobByIdAsync(Guid jobId);
         Task<IEnumerable<JobListItemResponse>> GetAllJobsAsync(Guid? recruiterId = null);
+        Task<IEnumerable<JobResponse>> GetCandidateJobCatalogAsync();
+        Task<JobResponse?> GetCandidateCatalogJobAsync(Guid jobId);
         Task DeleteJobAsync(Guid jobId);
         Task UploadJobDescriptionAsync(Guid jobId, IFormFile jdFile);
         Task DeleteJobDescriptionAsync(Guid jobId);
+        Task TriggerJdProcessingAsync(Guid jobId);
     }
 }

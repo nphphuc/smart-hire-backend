@@ -1,0 +1,13 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "smarthire-backend-dev"
+resolve_s3 = true
+s3_prefix = "smarthire-backend-dev"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "ApiStageName=\"dev\" AllowedCorsOrigin=\"https://smarthire-ai.org\" VpcSecurityGroupId=\"sg-0323869880612eb1f\" PrivateSubnetIdA=\"subnet-068218f5763210c39\" PrivateSubnetIdB=\"subnet-09e64b7d8270a9b71\" DbSecretArn=\"arn:aws:secretsmanager:ap-southeast-1:116527261062:secret:smarthire/rds/dev-Nbnpwh\" DbResourceId=\"db-J36TMZ4E257PKD77LONP7SFDTI\" DbUsername=\"smarthire_admin\" CognitoRegion=\"ap-southeast-1\" CognitoUserPoolId=\"ap-southeast-1_weNyhwA2s\" CognitoClientId=\"5lurb983vbhlf0smkp5iksvb28\" AspNetCoreEnvironment=\"Development\" AdminEmail=\"admin@hirelo.com\""
+image_repositories = []
+
+[default.global.parameters]
+region = "ap-southeast-1"

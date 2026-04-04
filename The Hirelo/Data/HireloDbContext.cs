@@ -12,6 +12,7 @@ namespace The_Hirelo.Data
         public DbSet<RecruiterProfile> RecruiterProfiles => Set<RecruiterProfile>();
         public DbSet<CandidateProfile> CandidateProfiles => Set<CandidateProfile>();
         public DbSet<Job> Jobs => Set<Job>();
+        public DbSet<Application> Applications => Set<Application>();
         public DbSet<InterviewSession> InterviewSessions => Set<InterviewSession>();
         public DbSet<InterviewQuestion> InterviewQuestions => Set<InterviewQuestion>();
         public DbSet<InterviewAnswer> InterviewAnswers => Set<InterviewAnswer>();
@@ -43,6 +44,26 @@ namespace The_Hirelo.Data
             modelBuilder.Entity<InterviewSession>()
                 .Property(x => x.Status)
                 .HasConversion<string>();
+
+            modelBuilder.Entity<Application>()
+                .Property(a => a.Status)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Application>()
+                .HasOne(a => a.Job)
+                .WithMany()
+                .HasForeignKey(a => a.JobId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Application>()
+                .HasOne(a => a.Candidate)
+                .WithMany()
+                .HasForeignKey(a => a.CandidateId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Application>()
+                .HasIndex(a => new { a.JobId, a.CandidateId })
+                .IsUnique();
 
             modelBuilder.Entity<RecruiterVerification>()
                 .HasOne(v => v.User)

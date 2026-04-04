@@ -59,5 +59,16 @@ namespace The_Hirelo.Repositories
                 .FirstOrDefaultAsync(cp => cp.Id == candidateProfileId);
             return candidate?.User;
         }
+
+        /// <summary>
+        /// Trả về true nếu candidate đã có ít nhất 1 InterviewSession với job thuộc recruiter này.
+        /// Dùng để kiểm tra quyền truy cập CV của recruiter.
+        /// </summary>
+        public async Task<bool> HasCandidateAppliedToRecruiterJobAsync(Guid candidateId, Guid recruiterProfileId)
+        {
+            return await _context.InterviewSessions
+                .AnyAsync(s => s.CandidateId == candidateId
+                            && s.Job.RecruiterId == recruiterProfileId);
+        }
     }
 }

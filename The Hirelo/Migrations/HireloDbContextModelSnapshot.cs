@@ -22,19 +22,87 @@ namespace The_Hirelo.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("The_Hirelo.Models.Application", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AppliedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("MatchScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CandidateId");
+
+                    b.HasIndex("JobId", "CandidateId")
+                        .IsUnique();
+
+                    b.ToTable("Applications");
+                });
+
             modelBuilder.Entity("The_Hirelo.Models.CandidateProfile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileKey")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Gaps")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("JobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("MatchingScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("ParsedSkillsJson")
+                        .HasColumnType("text");
+
                     b.Property<string>("Seniority")
                         .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Strengths")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("JobId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -425,13 +493,38 @@ namespace The_Hirelo.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("The_Hirelo.Models.Application", b =>
+                {
+                    b.HasOne("The_Hirelo.Models.CandidateProfile", "Candidate")
+                        .WithMany()
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("The_Hirelo.Models.Job", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Candidate");
+
+                    b.Navigation("Job");
+                });
+
             modelBuilder.Entity("The_Hirelo.Models.CandidateProfile", b =>
                 {
+                    b.HasOne("The_Hirelo.Models.Job", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId");
+
                     b.HasOne("The_Hirelo.Models.User", "User")
                         .WithOne("CandidateProfile")
                         .HasForeignKey("The_Hirelo.Models.CandidateProfile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Job");
 
                     b.Navigation("User");
                 });
@@ -472,7 +565,7 @@ namespace The_Hirelo.Migrations
             modelBuilder.Entity("The_Hirelo.Models.InterviewAnswer", b =>
                 {
                     b.HasOne("The_Hirelo.Models.InterviewQuestion", "Question")
-                        .WithMany("Answers")
+                        .WithMany("InterviewAnswers")
                         .HasForeignKey("QuestionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -607,7 +700,7 @@ namespace The_Hirelo.Migrations
 
             modelBuilder.Entity("The_Hirelo.Models.InterviewQuestion", b =>
                 {
-                    b.Navigation("Answers");
+                    b.Navigation("InterviewAnswers");
                 });
 
             modelBuilder.Entity("The_Hirelo.Models.InterviewSession", b =>
