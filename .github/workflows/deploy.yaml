@@ -11,7 +11,7 @@ permissions:
 jobs:
   deploy:
     # runs-on: ubuntu-latest tam comment dong nay
-    runs-on: self-hosted
+    runs-on: [self-hosted, ec2]
     steps:
       - uses: actions/checkout@v4
 
@@ -67,7 +67,7 @@ jobs:
       # 4. Deploy lên AWS
       - name: SAM Deploy
         run: |
-          sam deploy -t iac/sam/template.yaml --no-confirm-changeset \ 
+          sam deploy -t iac/sam/template.yaml --no-confirm-changeset \
             --no-fail-on-empty-changeset \
             --stack-name my-backend-stack \
             --resolve-s3 \
