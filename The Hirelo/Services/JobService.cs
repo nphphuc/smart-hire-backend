@@ -16,7 +16,10 @@ namespace The_Hirelo.Services
         private readonly IAmazonStepFunctions _stepFunctions;
         private readonly IConfiguration _configuration;
         private readonly ILogger<JobService> _logger;
-        public JobService(IJobRepository jobRepository, IAmazonStepFunctions stepFunctions,
+
+        public JobService(
+            IJobRepository jobRepository,
+            IAmazonStepFunctions stepFunctions,
             IConfiguration configuration,
             ILogger<JobService> logger)
         {
@@ -37,7 +40,7 @@ namespace The_Hirelo.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            if (jdFile is not null)
+            if (jdFile != null)
             {
                 var folder = Path.Combine("wwwroot", "jd");
                 Directory.CreateDirectory(folder);
@@ -53,13 +56,13 @@ namespace The_Hirelo.Services
 
             if (!string.IsNullOrWhiteSpace(dto.Description))
             {
-                try
-                {
-                    await TriggerJdProcessingAsync(job.Id);
+                try 
+                { 
+                    await TriggerJdProcessingAsync(job.Id); 
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "JD processing trigger failed for job {JobId}", job.Id);
+                catch (Exception ex) 
+                { 
+                    _logger.LogWarning(ex, "JD processing trigger failed for job {JobId}", job.Id); 
                 }
             }
 
@@ -84,45 +87,36 @@ namespace The_Hirelo.Services
                 Id = j.Id,
                 Title = j.Title,
                 CreatedAt = j.CreatedAt,
-                CompanyName = j.Recruiter.Company?.Name
+                CompanyName = j.Recruiter?.Company?.Name,
             });
         }
 
-        public async Task<IEnumerable<JobResponse>> GetCandidateJobCatalogAsync()
+        public async Task<IEnumerable<JobListItemResponse>> GetCandidateJobCatalogAsync()
         {
             var jobs = await _jobRepository.GetAllForCatalogAsync();
-            return jobs.Select(j => new JobResponse
-            {
-                Id = j.Id,
-                RecruiterId = j.RecruiterId,
-                Title = j.Title,
-                Description = j.Description,
-                CreatedAt = j.CreatedAt,
-                JdFileUrl = j.JdFileUrl,
-                CompanyName = j.Recruiter.Company?.Name
-            });
+            return jobs.Select(MapJobToListItemForCatalog);
         }
 
-        public async Task<JobResponse?> GetCandidateCatalogJobAsync(Guid jobId)
+        public async Task<JobListItemResponse?> GetCandidateCatalogJobAsync(Guid jobId)
         {
             var j = await _jobRepository.GetByIdAsync(jobId);
-            if (j is null) return null!;
-            return new JobResponse
+            return j == null ? null : MapJobToListItemForCatalog(j);
+        }
+
+        private static JobListItemResponse MapJobToListItemForCatalog(Job j) =>
+            new()
             {
                 Id = j.Id,
-                RecruiterId = j.RecruiterId,
                 Title = j.Title,
-                Description = j.Description,
+                CompanyName = j.Recruiter?.Company?.Name,
                 CreatedAt = j.CreatedAt,
-                JdFileUrl = j.JdFileUrl,
-                CompanyName = j.Recruiter.Company?.Name
+                Description = j.Description,
             };
-        }
 
         public async Task<JobDetailResponse> GetJobByIdAsync(Guid jobId)
         {
             var j = await _jobRepository.GetByIdAsync(jobId);
-            if (j is null) return null!;
+            if (j == null) return null!;
             return new JobDetailResponse
             {
                 Id = j.Id,
@@ -160,13 +154,13 @@ namespace The_Hirelo.Services
 
             if (dto.Description != null && !string.IsNullOrWhiteSpace(dto.Description))
             {
-                try
-                {
-                    await TriggerJdProcessingAsync(job.Id);
+                try 
+                { 
+                    await TriggerJdProcessingAsync(job.Id); 
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "JD processing trigger failed for job {JobId}", job.Id);
+                catch (Exception ex) 
+                { 
+                    _logger.LogWarning(ex, "JD processing trigger failed for job {JobId}", job.Id); 
                 }
             }
 
