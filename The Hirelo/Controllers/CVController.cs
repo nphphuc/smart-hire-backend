@@ -78,8 +78,8 @@ namespace The_Hirelo.Controllers
                 // Step 2: INSERT candidate_profile (status: PROCESSING) → profileId
                 var profile = await _cvService.CreateProfileAsync(userId, request.JobId, fileUrl, fileKey);
 
-                // Step 3: PUBLISH cv_parse_queue(profileId, fileKey, jobId)
-                await _cvService.PublishCVParseQueueAsync(profile.Id, fileKey, request.JobId);
+                // Step 3: PUBLISH cv_parse_queue(candidateSub, fileKey, jobId)
+                await _cvService.PublishCVParseQueueAsync(cognitoSub, fileKey, request.JobId);
 
                 _logger.LogInformation("CV accepted | ProfileId={Id} | Job={JobId}", profile.Id, request.JobId);
 

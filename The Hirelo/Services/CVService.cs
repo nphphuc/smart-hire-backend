@@ -78,8 +78,8 @@ namespace The_Hirelo.Services
             return profile;
         }
 
-        // Step 3: PUBLISH cv_parse_queue(profileId, fileKey, jobId)
-        public async Task PublishCVParseQueueAsync(Guid profileId, string fileKey, Guid jobId)
+        // Step 3: PUBLISH cv_parse_queue(candidateSub, fileKey, jobId)
+        public async Task PublishCVParseQueueAsync(string candidateSub, string fileKey, Guid jobId)
         {
             var queueUrl = _config["AWS:SQS:CVParseQueueUrl"]!;
             var job = await _context.Jobs.FirstOrDefaultAsync(j => j.Id == jobId);
@@ -87,7 +87,7 @@ namespace The_Hirelo.Services
 
             var body = JsonSerializer.Serialize(new
             {
-                profileId = profileId.ToString(),
+                profileId = candidateSub,
                 fileKey,
                 jobId = jobId.ToString(),
                 jdText
@@ -99,7 +99,7 @@ namespace The_Hirelo.Services
                 MessageBody = body
             });
 
-            _logger.LogInformation("Published cv_parse_queue | ProfileId: {ProfileId}", profileId);
+            _logger.LogInformation("Published cv_parse_queue | CandidateSub: {CandidateSub}", candidateSub);
         }
 
         public async Task<string> GeneratePresignedUploadUrlAsync(string fileKey, string? contentType)
