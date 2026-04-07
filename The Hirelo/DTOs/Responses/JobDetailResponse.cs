@@ -11,5 +11,10 @@ namespace The_Hirelo.DTOs.Responses
         public Guid RecruiterProfileId { get; set; }
         public string? RecruiterName { get; set; }
         public string? CompanyName { get; set; }
+        public string? Location { get; set; }
+        public string? EmploymentType { get; set; }
+        public decimal? SalaryMin { get; set; }
+        public decimal? SalaryMax { get; set; }
+        public string? ExperienceLevel { get; set; }
     }
 }

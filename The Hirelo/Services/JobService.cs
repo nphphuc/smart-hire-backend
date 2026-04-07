@@ -37,6 +37,11 @@ namespace The_Hirelo.Services
                 RecruiterId = recruiterId,
                 Title = dto.Title,
                 Description = dto.Description,
+                Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim(),
+                EmploymentType = string.IsNullOrWhiteSpace(dto.EmploymentType) ? null : dto.EmploymentType.Trim(),
+                SalaryMin = dto.SalaryMin,
+                SalaryMax = dto.SalaryMax,
+                ExperienceLevel = string.IsNullOrWhiteSpace(dto.ExperienceLevel) ? null : dto.ExperienceLevel.Trim(),
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -66,7 +71,7 @@ namespace The_Hirelo.Services
                 }
             }
 
-            return new JobResponse { Id = job.Id, Title = job.Title, Description = job.Description };
+            return MapToJobResponse(job);
         }
 
         public async Task DeleteJobAsync(Guid jobId)
@@ -88,6 +93,11 @@ namespace The_Hirelo.Services
                 Title = j.Title,
                 CreatedAt = j.CreatedAt,
                 CompanyName = j.Recruiter?.Company?.Name,
+                Location = j.Location,
+                EmploymentType = j.EmploymentType,
+                SalaryMin = j.SalaryMin,
+                SalaryMax = j.SalaryMax,
+                ExperienceLevel = j.ExperienceLevel,
             });
         }
 
@@ -111,6 +121,11 @@ namespace The_Hirelo.Services
                 CompanyName = j.Recruiter?.Company?.Name,
                 CreatedAt = j.CreatedAt,
                 Description = j.Description,
+                Location = j.Location,
+                EmploymentType = j.EmploymentType,
+                SalaryMin = j.SalaryMin,
+                SalaryMax = j.SalaryMax,
+                ExperienceLevel = j.ExperienceLevel,
             };
 
         public async Task<JobDetailResponse> GetJobByIdAsync(Guid jobId)
@@ -127,7 +142,12 @@ namespace The_Hirelo.Services
                 JdFileUrl = j.JdFileUrl,
                 RecruiterProfileId = j.Recruiter.Id,
                 RecruiterName = j.Recruiter.User?.Email,
-                CompanyName = j.Recruiter.Company?.Name
+                CompanyName = j.Recruiter.Company?.Name,
+                Location = j.Location,
+                EmploymentType = j.EmploymentType,
+                SalaryMin = j.SalaryMin,
+                SalaryMax = j.SalaryMax,
+                ExperienceLevel = j.ExperienceLevel,
             };
         }
 
@@ -137,6 +157,16 @@ namespace The_Hirelo.Services
             if (job == null) return null!;
             job.Title = dto.Title ?? job.Title;
             job.Description = dto.Description ?? job.Description;
+            if (dto.Location != null)
+                job.Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim();
+            if (dto.EmploymentType != null)
+                job.EmploymentType = string.IsNullOrWhiteSpace(dto.EmploymentType) ? null : dto.EmploymentType.Trim();
+            if (dto.SalaryMin.HasValue)
+                job.SalaryMin = dto.SalaryMin;
+            if (dto.SalaryMax.HasValue)
+                job.SalaryMax = dto.SalaryMax;
+            if (dto.ExperienceLevel != null)
+                job.ExperienceLevel = string.IsNullOrWhiteSpace(dto.ExperienceLevel) ? null : dto.ExperienceLevel.Trim();
 
             if (jdFile != null)
             {
@@ -164,7 +194,7 @@ namespace The_Hirelo.Services
                 }
             }
 
-            return new JobResponse { Id = job.Id, Title = job.Title, Description = job.Description };
+            return MapToJobResponse(job);
         }
 
         public async Task UploadJobDescriptionAsync(Guid jobId, IFormFile jdFile)
@@ -219,5 +249,18 @@ namespace The_Hirelo.Services
                 "Step Functions execution started for job {JobId}: {ExecutionArn}",
                 jobId, response.ExecutionArn);
         }
+
+        private static JobResponse MapToJobResponse(Job job) =>
+            new()
+            {
+                Id = job.Id,
+                Title = job.Title,
+                Description = job.Description,
+                Location = job.Location,
+                EmploymentType = job.EmploymentType,
+                SalaryMin = job.SalaryMin,
+                SalaryMax = job.SalaryMax,
+                ExperienceLevel = job.ExperienceLevel,
+            };
     }
 }

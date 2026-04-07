@@ -321,11 +321,26 @@ namespace The_Hirelo.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<string>("EmploymentType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExperienceLevel")
+                        .HasColumnType("text");
+
                     b.Property<string>("JdFileUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Location")
                         .HasColumnType("text");
 
                     b.Property<Guid>("RecruiterId")
                         .HasColumnType("uuid");
+
+                    b.Property<decimal?>("SalaryMax")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("SalaryMin")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Title")
                         .HasColumnType("text");
