@@ -1,4 +1,4 @@
-﻿using The_Hirelo.DTOs.Requests;
+using The_Hirelo.DTOs.Requests;
 using The_Hirelo.DTOs.Responses;
 using Microsoft.AspNetCore.Http;
 
@@ -15,5 +15,6 @@ namespace The_Hirelo.Services.Interfaces
         Task DeleteJobAsync(Guid jobId);
         Task UploadJobDescriptionAsync(Guid jobId, IFormFile jdFile);
         Task DeleteJobDescriptionAsync(Guid jobId);
+        Task TriggerJdProcessingAsync(Guid jobId);
     }
 }

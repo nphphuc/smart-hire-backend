@@ -24,8 +24,9 @@ namespace The_Hirelo.Controllers
         private readonly ICompanyService _companyService;
         private readonly IJdRepository _jdRepository;
         private readonly HireloDbContext _db;
+        private readonly ILogger<RecruiterController> _logger;
 
-        public RecruiterController(IJobService jobService, ICandidateService candidateService, IComparisonService comparisonService, IUserRepository userRepository, ICompanyService companyService, IJdRepository jdRepository, HireloDbContext db)
+        public RecruiterController(IJobService jobService, ICandidateService candidateService, IComparisonService comparisonService, IUserRepository userRepository, ICompanyService companyService, IJdRepository jdRepository, HireloDbContext db, ILogger<RecruiterController> logger)
         {
             _jobService = jobService;
             _candidateService = candidateService;
@@ -34,6 +35,7 @@ namespace The_Hirelo.Controllers
             _companyService = companyService;
             _jdRepository = jdRepository;
             _db = db;
+            _logger = logger;
         }
 
         // POST /api/recruiter/profile
@@ -327,6 +329,32 @@ namespace The_Hirelo.Controllers
             company.Name = dto.Name ?? company.Name;
             var updated = await _companyService.UpdateAsync(company);
             return Ok(updated);
+        }
+
+        // POST /api/recruiter/jobs/{jobId}/refresh-ranking
+        // Re-triggers the JD processing + candidate ranking pipeline for an existing job.
+        [HttpPost("jobs/{jobId}/refresh-ranking")]
+        public async Task<IActionResult> RefreshCandidateRanking(Guid jobId)
+        {
+            var cognitoSub = User.GetCognitoSub();
+            if (string.IsNullOrEmpty(cognitoSub)) return Forbid();
+            var user = await _userRepository.GetByCognitoSubAsync(cognitoSub);
+            if (user == null || user.RecruiterProfile == null) return Forbid();
+
+            var existing = await _jobService.GetJobByIdAsync(jobId);
+            if (existing == null) return NotFound(new { message = "Job not found." });
+            if (existing.RecruiterProfileId != user.RecruiterProfile.Id) return Forbid();
+
+            try
+            {
+                await _jobService.TriggerJdProcessingAsync(jobId);
+                return Ok(new { message = "Ranking refresh triggered. Results will appear in real-time via AppSync." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Refresh ranking trigger failed for job {JobId}", jobId);
+                return StatusCode(500, new { message = "Failed to trigger ranking refresh." });
+            }
         }
 
         // POST /api/recruiter/

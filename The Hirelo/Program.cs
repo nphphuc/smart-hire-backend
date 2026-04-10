@@ -1,5 +1,6 @@
 using Amazon;
 using Amazon.CognitoIdentityProvider;
+using Amazon.Lambda;
 using Amazon.S3;
 using Amazon.StepFunctions;
 using DotNetEnv;
@@ -13,7 +14,6 @@ using The_Hirelo.Repositories.Interfaces;
 using The_Hirelo.Services;
 using The_Hirelo.Services.Interfaces;
 using The_Hirelo.Storage;
-using Amazon.StepFunctions;
 
 namespace The_Hirelo
 {
@@ -42,6 +42,7 @@ namespace The_Hirelo
 
             builder.Services.AddAWSService<IAmazonS3>();
             builder.Services.AddAWSService<IAmazonStepFunctions>();
+            builder.Services.AddAWSService<IAmazonLambda>();
 
             // Add services to the container.
 

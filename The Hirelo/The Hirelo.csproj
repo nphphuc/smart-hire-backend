@@ -21,6 +21,7 @@
 	<PackageReference Include="AWSSDK.SimpleEmail" Version="4.0.2.16" />
 	<PackageReference Include="AWSSDK.SQS" Version="4.0.2.17" />
     <PackageReference Include="AWSSDK.StepFunctions" Version="4.0.2.15" />
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.4.11" />
 	<PackageReference Include="AWSSDK.Textract" Version="4.0.3.16" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.24" />

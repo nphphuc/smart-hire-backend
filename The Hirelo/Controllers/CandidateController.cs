@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using The_Hirelo.Extensions;
 using The_Hirelo.Repositories.Interfaces;
 using The_Hirelo.Services.Interfaces;
+using Amazon.Lambda;
+using Amazon.Lambda.Model;
+using System.Text.Json;
 
 namespace The_Hirelo.Controllers
 {
@@ -13,12 +16,21 @@ namespace The_Hirelo.Controllers
         private readonly ICandidateService _candidateService;
         private readonly IUserRepository _userRepository;
         private readonly IJdRepository _jdRepository;
+        private readonly IAmazonLambda _lambda;
+        private readonly ILogger<CandidateController> _logger;
 
-        public CandidateController(ICandidateService candidateService, IUserRepository userRepository, IJdRepository jdRepository)
+        public CandidateController(
+            ICandidateService candidateService,
+            IUserRepository userRepository,
+            IJdRepository jdRepository,
+            IAmazonLambda lambda,
+            ILogger<CandidateController> logger)
         {
             _candidateService = candidateService;
             _userRepository = userRepository;
             _jdRepository = jdRepository;
+            _lambda = lambda;
+            _logger = logger;
         }
 
         // -------------------------------------------------------
@@ -104,6 +116,49 @@ namespace The_Hirelo.Controllers
         {
             var results = await _jdRepository.GetAllJdsAsync();
             return Ok(results);
+        }
+
+        // POST /api/candidate/me/refresh-suggestions
+        // Re-invokes the job_suggestion_engine Lambda for the authenticated candidate,
+        // causing it to re-run ANN search across all job_embeddings and push fresh
+        // suggestions to the candidate dashboard via AppSync.
+        [HttpPost("api/candidate/me/refresh-suggestions")]
+        public async Task<IActionResult> RefreshJobSuggestions()
+        {
+            var cognitoSub = User.GetCognitoSub();
+            if (string.IsNullOrEmpty(cognitoSub)) return Forbid();
+
+            var user = await _userRepository.GetByCognitoSubAsync(cognitoSub);
+            if (user == null || user.CandidateProfile == null)
+                return NotFound(new { message = "Candidate profile not found." });
+
+            var lambdaFunctionName = System.Environment.GetEnvironmentVariable("JOB_SUGGESTION_ENGINE_FUNCTION_NAME")
+                ?? "job_suggestion_engine";
+
+            // Minimal payload: profile_id is the Cognito sub. The Lambda reads the
+            // stored CV vector + masked_cv_text from pgvector/DynamoDB automatically.
+            var payload = JsonSerializer.Serialize(new
+            {
+                profile_id = cognitoSub,
+                trigger_source = "manual_refresh"
+            });
+
+            try
+            {
+                await _lambda.InvokeAsync(new InvokeRequest
+                {
+                    FunctionName = lambdaFunctionName,
+                    InvocationType = "Event",   // fire-and-forget (async)
+                    Payload = payload
+                });
+
+                return Ok(new { message = "Suggestion refresh triggered. New matches will appear shortly via AppSync." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Suggestion refresh Lambda invoke failed for candidate {CognitoSub}", cognitoSub);
+                return StatusCode(500, new { message = "Failed to trigger suggestion refresh." });
+            }
         }
     }
 }
